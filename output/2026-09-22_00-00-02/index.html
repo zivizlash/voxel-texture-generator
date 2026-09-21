@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>16x16 Procedural Textures — 2026-09-22_00-00-02</title>
+  <style>
+    :root {
+      --bg: #141416;
+      --card-bg: #1c1c20;
+      --border: #2e2e34;
+      --text: #e2e2e8;
+      --text-dim: #8b8b96;
+      --accent: #58a6ff;
+      --accent-hover: #1f6feb;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    h1 { font-size: 22px; font-weight: 700; }
+    .badge {
+      background: #23232a;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .badge b { color: var(--accent); }
+    .category-section {
+      margin-bottom: 32px;
+    }
+    .category-section h2 {
+      font-size: 16px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--accent);
+      padding-left: 8px;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 16px;
+    }
+    .block-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .card-header h3 {
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+    .block-id {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .palette-bar {
+      display: flex;
+      gap: 2px;
+      padding: 2px;
+      background: #111113;
+      border-radius: 4px;
+    }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    .variants-row {
+      display: flex;
+      gap: 8px;
+      background: #111113;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .variant-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .variant-item:hover {
+      background: #2a2a32;
+      transform: translateY(-2px);
+    }
+    .pixel-art {
+      width: 56px;
+      height: 56px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid #333;
+      background: #000;
+    }
+    .v-label {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Модальное окно инспектора бесшовности 3x3 */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    .modal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .close-btn:hover { color: #fff; }
+    .tiling-viewport {
+      display: flex;
+      justify-content: center;
+      background: #0a0a0c;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+    }
+    .tiling-canvas {
+      display: grid;
+      grid-template-columns: repeat(3, 96px);
+      grid-template-rows: repeat(3, 96px);
+      width: 288px;
+      height: 288px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tiling-canvas.show-grid img {
+      outline: 1px solid rgba(88, 166, 255, 0.4);
+    }
+    .tiling-canvas img {
+      width: 96px;
+      height: 96px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+    .modal-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>16x16 Texture Generator</h1>
+      <div style="font-size: 13px; color: var(--text-dim); margin-top: 4px;">
+        Процедурная генерация пиксельных текстур по правилам формы, палитры, тороидального шума и верхнего света
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <span class="badge">Сид: <b>1337</b></span>
+      <span class="badge">Дата: <b>2026-09-22_00-00-02</b></span>
+      <span class="badge">Всего текстур: <b>80</b></span>
+    </div>
+  </header>
+
+  <main>
+    
+      <section class="category-section">
+        <h2>Сыпучие и пластичные материалы</h2>
+        <div class="cards-grid">
+          
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Песок</h3>
+              <code class="block-id">sand</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(188,168,116)" title="rgb(188,168,116)"></span><span class="swatch" style="background: rgb(203,186,133)" title="rgb(203,186,133)"></span><span class="swatch" style="background: rgb(215,201,150)" title="rgb(215,201,150)"></span><span class="swatch" style="background: rgb(223,213,165)" title="rgb(223,213,165)"></span><span class="swatch" style="background: rgb(232,224,181)" title="rgb(232,224,181)"></span><span class="swatch" style="background: rgb(242,235,208)" title="rgb(242,235,208)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/sand_var1.png', 'Песок (Вариант 1)')">
+            <img class="pixel-art" src="textures/sand_var1.png" alt="Песок #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sand_var2.png', 'Песок (Вариант 2)')">
+            <img class="pixel-art" src="textures/sand_var2.png" alt="Песок #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sand_var3.png', 'Песок (Вариант 3)')">
+            <img class="pixel-art" src="textures/sand_var3.png" alt="Песок #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sand_var4.png', 'Песок (Вариант 4)')">
+            <img class="pixel-art" src="textures/sand_var4.png" alt="Песок #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sand_var5.png', 'Песок (Вариант 5)')">
+            <img class="pixel-art" src="textures/sand_var5.png" alt="Песок #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Красный песок</h3>
+              <code class="block-id">red_sand</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(143,64,25)" title="rgb(143,64,25)"></span><span class="swatch" style="background: rgb(165,77,32)" title="rgb(165,77,32)"></span><span class="swatch" style="background: rgb(184,91,40)" title="rgb(184,91,40)"></span><span class="swatch" style="background: rgb(200,108,52)" title="rgb(200,108,52)"></span><span class="swatch" style="background: rgb(213,126,68)" title="rgb(213,126,68)"></span><span class="swatch" style="background: rgb(224,146,87)" title="rgb(224,146,87)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/red_sand_var1.png', 'Красный песок (Вариант 1)')">
+            <img class="pixel-art" src="textures/red_sand_var1.png" alt="Красный песок #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sand_var2.png', 'Красный песок (Вариант 2)')">
+            <img class="pixel-art" src="textures/red_sand_var2.png" alt="Красный песок #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sand_var3.png', 'Красный песок (Вариант 3)')">
+            <img class="pixel-art" src="textures/red_sand_var3.png" alt="Красный песок #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sand_var4.png', 'Красный песок (Вариант 4)')">
+            <img class="pixel-art" src="textures/red_sand_var4.png" alt="Красный песок #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sand_var5.png', 'Красный песок (Вариант 5)')">
+            <img class="pixel-art" src="textures/red_sand_var5.png" alt="Красный песок #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Гравий</h3>
+              <code class="block-id">gravel</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(92,87,87)" title="rgb(92,87,87)"></span><span class="swatch" style="background: rgb(111,104,104)" title="rgb(111,104,104)"></span><span class="swatch" style="background: rgb(126,119,118)" title="rgb(126,119,118)"></span><span class="swatch" style="background: rgb(143,135,133)" title="rgb(143,135,133)"></span><span class="swatch" style="background: rgb(159,151,148)" title="rgb(159,151,148)"></span><span class="swatch" style="background: rgb(176,168,165)" title="rgb(176,168,165)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/gravel_var1.png', 'Гравий (Вариант 1)')">
+            <img class="pixel-art" src="textures/gravel_var1.png" alt="Гравий #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/gravel_var2.png', 'Гравий (Вариант 2)')">
+            <img class="pixel-art" src="textures/gravel_var2.png" alt="Гравий #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/gravel_var3.png', 'Гравий (Вариант 3)')">
+            <img class="pixel-art" src="textures/gravel_var3.png" alt="Гравий #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/gravel_var4.png', 'Гравий (Вариант 4)')">
+            <img class="pixel-art" src="textures/gravel_var4.png" alt="Гравий #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/gravel_var5.png', 'Гравий (Вариант 5)')">
+            <img class="pixel-art" src="textures/gravel_var5.png" alt="Гравий #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Глина</h3>
+              <code class="block-id">clay</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(127,136,151)" title="rgb(127,136,151)"></span><span class="swatch" style="background: rgb(141,150,165)" title="rgb(141,150,165)"></span><span class="swatch" style="background: rgb(153,163,178)" title="rgb(153,163,178)"></span><span class="swatch" style="background: rgb(165,176,191)" title="rgb(165,176,191)"></span><span class="swatch" style="background: rgb(178,188,203)" title="rgb(178,188,203)"></span><span class="swatch" style="background: rgb(194,202,214)" title="rgb(194,202,214)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/clay_var1.png', 'Глина (Вариант 1)')">
+            <img class="pixel-art" src="textures/clay_var1.png" alt="Глина #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/clay_var2.png', 'Глина (Вариант 2)')">
+            <img class="pixel-art" src="textures/clay_var2.png" alt="Глина #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/clay_var3.png', 'Глина (Вариант 3)')">
+            <img class="pixel-art" src="textures/clay_var3.png" alt="Глина #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/clay_var4.png', 'Глина (Вариант 4)')">
+            <img class="pixel-art" src="textures/clay_var4.png" alt="Глина #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/clay_var5.png', 'Глина (Вариант 5)')">
+            <img class="pixel-art" src="textures/clay_var5.png" alt="Глина #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+        </div>
+      </section>
+    
+
+      <section class="category-section">
+        <h2>Органика и почвы</h2>
+        <div class="cards-grid">
+          
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Грязь</h3>
+              <code class="block-id">mud</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(48,44,46)" title="rgb(48,44,46)"></span><span class="swatch" style="background: rgb(60,54,57)" title="rgb(60,54,57)"></span><span class="swatch" style="background: rgb(71,63,67)" title="rgb(71,63,67)"></span><span class="swatch" style="background: rgb(86,75,80)" title="rgb(86,75,80)"></span><span class="swatch" style="background: rgb(100,88,94)" title="rgb(100,88,94)"></span><span class="swatch" style="background: rgb(114,101,108)" title="rgb(114,101,108)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/mud_var1.png', 'Грязь (Вариант 1)')">
+            <img class="pixel-art" src="textures/mud_var1.png" alt="Грязь #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mud_var2.png', 'Грязь (Вариант 2)')">
+            <img class="pixel-art" src="textures/mud_var2.png" alt="Грязь #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mud_var3.png', 'Грязь (Вариант 3)')">
+            <img class="pixel-art" src="textures/mud_var3.png" alt="Грязь #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mud_var4.png', 'Грязь (Вариант 4)')">
+            <img class="pixel-art" src="textures/mud_var4.png" alt="Грязь #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mud_var5.png', 'Грязь (Вариант 5)')">
+            <img class="pixel-art" src="textures/mud_var5.png" alt="Грязь #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Каменистая земля</h3>
+              <code class="block-id">coarse_dirt</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(75,53,36)" title="rgb(75,53,36)"></span><span class="swatch" style="background: rgb(91,66,46)" title="rgb(91,66,46)"></span><span class="swatch" style="background: rgb(109,78,54)" title="rgb(109,78,54)"></span><span class="swatch" style="background: rgb(125,92,65)" title="rgb(125,92,65)"></span><span class="swatch" style="background: rgb(141,106,76)" title="rgb(141,106,76)"></span><span class="swatch" style="background: rgb(157,119,86)" title="rgb(157,119,86)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/coarse_dirt_var1.png', 'Каменистая земля (Вариант 1)')">
+            <img class="pixel-art" src="textures/coarse_dirt_var1.png" alt="Каменистая земля #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/coarse_dirt_var2.png', 'Каменистая земля (Вариант 2)')">
+            <img class="pixel-art" src="textures/coarse_dirt_var2.png" alt="Каменистая земля #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/coarse_dirt_var3.png', 'Каменистая земля (Вариант 3)')">
+            <img class="pixel-art" src="textures/coarse_dirt_var3.png" alt="Каменистая земля #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/coarse_dirt_var4.png', 'Каменистая земля (Вариант 4)')">
+            <img class="pixel-art" src="textures/coarse_dirt_var4.png" alt="Каменистая земля #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/coarse_dirt_var5.png', 'Каменистая земля (Вариант 5)')">
+            <img class="pixel-art" src="textures/coarse_dirt_var5.png" alt="Каменистая земля #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Укоренившаяся земля</h3>
+              <code class="block-id">rooted_dirt</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(78,54,35)" title="rgb(78,54,35)"></span><span class="swatch" style="background: rgb(94,67,44)" title="rgb(94,67,44)"></span><span class="swatch" style="background: rgb(112,80,54)" title="rgb(112,80,54)"></span><span class="swatch" style="background: rgb(129,93,64)" title="rgb(129,93,64)"></span><span class="swatch" style="background: rgb(144,105,74)" title="rgb(144,105,74)"></span><span class="swatch" style="background: rgb(159,117,83)" title="rgb(159,117,83)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/rooted_dirt_var1.png', 'Укоренившаяся земля (Вариант 1)')">
+            <img class="pixel-art" src="textures/rooted_dirt_var1.png" alt="Укоренившаяся земля #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/rooted_dirt_var2.png', 'Укоренившаяся земля (Вариант 2)')">
+            <img class="pixel-art" src="textures/rooted_dirt_var2.png" alt="Укоренившаяся земля #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/rooted_dirt_var3.png', 'Укоренившаяся земля (Вариант 3)')">
+            <img class="pixel-art" src="textures/rooted_dirt_var3.png" alt="Укоренившаяся земля #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/rooted_dirt_var4.png', 'Укоренившаяся земля (Вариант 4)')">
+            <img class="pixel-art" src="textures/rooted_dirt_var4.png" alt="Укоренившаяся земля #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/rooted_dirt_var5.png', 'Укоренившаяся земля (Вариант 5)')">
+            <img class="pixel-art" src="textures/rooted_dirt_var5.png" alt="Укоренившаяся земля #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Подзол</h3>
+              <code class="block-id">podzol</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(61,40,26)" title="rgb(61,40,26)"></span><span class="swatch" style="background: rgb(77,51,34)" title="rgb(77,51,34)"></span><span class="swatch" style="background: rgb(93,63,42)" title="rgb(93,63,42)"></span><span class="swatch" style="background: rgb(107,73,49)" title="rgb(107,73,49)"></span><span class="swatch" style="background: rgb(123,86,58)" title="rgb(123,86,58)"></span><span class="swatch" style="background: rgb(141,99,68)" title="rgb(141,99,68)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/podzol_var1.png', 'Подзол (Вариант 1)')">
+            <img class="pixel-art" src="textures/podzol_var1.png" alt="Подзол #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/podzol_var2.png', 'Подзол (Вариант 2)')">
+            <img class="pixel-art" src="textures/podzol_var2.png" alt="Подзол #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/podzol_var3.png', 'Подзол (Вариант 3)')">
+            <img class="pixel-art" src="textures/podzol_var3.png" alt="Подзол #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/podzol_var4.png', 'Подзол (Вариант 4)')">
+            <img class="pixel-art" src="textures/podzol_var4.png" alt="Подзол #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/podzol_var5.png', 'Подзол (Вариант 5)')">
+            <img class="pixel-art" src="textures/podzol_var5.png" alt="Подзол #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Мицелий</h3>
+              <code class="block-id">mycelium</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(73,67,75)" title="rgb(73,67,75)"></span><span class="swatch" style="background: rgb(87,81,91)" title="rgb(87,81,91)"></span><span class="swatch" style="background: rgb(104,97,109)" title="rgb(104,97,109)"></span><span class="swatch" style="background: rgb(121,112,126)" title="rgb(121,112,126)"></span><span class="swatch" style="background: rgb(140,130,146)" title="rgb(140,130,146)"></span><span class="swatch" style="background: rgb(156,146,162)" title="rgb(156,146,162)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/mycelium_var1.png', 'Мицелий (Вариант 1)')">
+            <img class="pixel-art" src="textures/mycelium_var1.png" alt="Мицелий #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mycelium_var2.png', 'Мицелий (Вариант 2)')">
+            <img class="pixel-art" src="textures/mycelium_var2.png" alt="Мицелий #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mycelium_var3.png', 'Мицелий (Вариант 3)')">
+            <img class="pixel-art" src="textures/mycelium_var3.png" alt="Мицелий #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mycelium_var4.png', 'Мицелий (Вариант 4)')">
+            <img class="pixel-art" src="textures/mycelium_var4.png" alt="Мицелий #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/mycelium_var5.png', 'Мицелий (Вариант 5)')">
+            <img class="pixel-art" src="textures/mycelium_var5.png" alt="Мицелий #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+        </div>
+      </section>
+    
+
+      <section class="category-section">
+        <h2>Каменные и магматические породы</h2>
+        <div class="cards-grid">
+          
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Камень</h3>
+              <code class="block-id">stone</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(71,71,71)" title="rgb(71,71,71)"></span><span class="swatch" style="background: rgb(88,88,88)" title="rgb(88,88,88)"></span><span class="swatch" style="background: rgb(107,107,107)" title="rgb(107,107,107)"></span><span class="swatch" style="background: rgb(125,125,125)" title="rgb(125,125,125)"></span><span class="swatch" style="background: rgb(143,143,143)" title="rgb(143,143,143)"></span><span class="swatch" style="background: rgb(161,161,161)" title="rgb(161,161,161)"></span><span class="swatch" style="background: rgb(179,179,179)" title="rgb(179,179,179)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/stone_var1.png', 'Камень (Вариант 1)')">
+            <img class="pixel-art" src="textures/stone_var1.png" alt="Камень #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/stone_var2.png', 'Камень (Вариант 2)')">
+            <img class="pixel-art" src="textures/stone_var2.png" alt="Камень #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/stone_var3.png', 'Камень (Вариант 3)')">
+            <img class="pixel-art" src="textures/stone_var3.png" alt="Камень #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/stone_var4.png', 'Камень (Вариант 4)')">
+            <img class="pixel-art" src="textures/stone_var4.png" alt="Камень #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/stone_var5.png', 'Камень (Вариант 5)')">
+            <img class="pixel-art" src="textures/stone_var5.png" alt="Камень #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Андезит</h3>
+              <code class="block-id">andesite</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(80,80,82)" title="rgb(80,80,82)"></span><span class="swatch" style="background: rgb(97,97,100)" title="rgb(97,97,100)"></span><span class="swatch" style="background: rgb(115,115,118)" title="rgb(115,115,118)"></span><span class="swatch" style="background: rgb(132,132,136)" title="rgb(132,132,136)"></span><span class="swatch" style="background: rgb(150,150,154)" title="rgb(150,150,154)"></span><span class="swatch" style="background: rgb(167,167,171)" title="rgb(167,167,171)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/andesite_var1.png', 'Андезит (Вариант 1)')">
+            <img class="pixel-art" src="textures/andesite_var1.png" alt="Андезит #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/andesite_var2.png', 'Андезит (Вариант 2)')">
+            <img class="pixel-art" src="textures/andesite_var2.png" alt="Андезит #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/andesite_var3.png', 'Андезит (Вариант 3)')">
+            <img class="pixel-art" src="textures/andesite_var3.png" alt="Андезит #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/andesite_var4.png', 'Андезит (Вариант 4)')">
+            <img class="pixel-art" src="textures/andesite_var4.png" alt="Андезит #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/andesite_var5.png', 'Андезит (Вариант 5)')">
+            <img class="pixel-art" src="textures/andesite_var5.png" alt="Андезит #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Гранит</h3>
+              <code class="block-id">granite</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(102,67,58)" title="rgb(102,67,58)"></span><span class="swatch" style="background: rgb(123,82,71)" title="rgb(123,82,71)"></span><span class="swatch" style="background: rgb(143,98,86)" title="rgb(143,98,86)"></span><span class="swatch" style="background: rgb(162,114,102)" title="rgb(162,114,102)"></span><span class="swatch" style="background: rgb(179,129,117)" title="rgb(179,129,117)"></span><span class="swatch" style="background: rgb(196,146,134)" title="rgb(196,146,134)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/granite_var1.png', 'Гранит (Вариант 1)')">
+            <img class="pixel-art" src="textures/granite_var1.png" alt="Гранит #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/granite_var2.png', 'Гранит (Вариант 2)')">
+            <img class="pixel-art" src="textures/granite_var2.png" alt="Гранит #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/granite_var3.png', 'Гранит (Вариант 3)')">
+            <img class="pixel-art" src="textures/granite_var3.png" alt="Гранит #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/granite_var4.png', 'Гранит (Вариант 4)')">
+            <img class="pixel-art" src="textures/granite_var4.png" alt="Гранит #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/granite_var5.png', 'Гранит (Вариант 5)')">
+            <img class="pixel-art" src="textures/granite_var5.png" alt="Гранит #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Диорит</h3>
+              <code class="block-id">diorite</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(134,134,136)" title="rgb(134,134,136)"></span><span class="swatch" style="background: rgb(156,156,159)" title="rgb(156,156,159)"></span><span class="swatch" style="background: rgb(176,176,179)" title="rgb(176,176,179)"></span><span class="swatch" style="background: rgb(197,197,200)" title="rgb(197,197,200)"></span><span class="swatch" style="background: rgb(216,216,219)" title="rgb(216,216,219)"></span><span class="swatch" style="background: rgb(235,235,239)" title="rgb(235,235,239)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/diorite_var1.png', 'Диорит (Вариант 1)')">
+            <img class="pixel-art" src="textures/diorite_var1.png" alt="Диорит #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/diorite_var2.png', 'Диорит (Вариант 2)')">
+            <img class="pixel-art" src="textures/diorite_var2.png" alt="Диорит #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/diorite_var3.png', 'Диорит (Вариант 3)')">
+            <img class="pixel-art" src="textures/diorite_var3.png" alt="Диорит #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/diorite_var4.png', 'Диорит (Вариант 4)')">
+            <img class="pixel-art" src="textures/diorite_var4.png" alt="Диорит #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/diorite_var5.png', 'Диорит (Вариант 5)')">
+            <img class="pixel-art" src="textures/diorite_var5.png" alt="Диорит #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+        </div>
+      </section>
+    
+
+      <section class="category-section">
+        <h2>Слоистые и спрессованные породы</h2>
+        <div class="cards-grid">
+          
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Глубинный сланец</h3>
+              <code class="block-id">deepslate</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(33,33,38)" title="rgb(33,33,38)"></span><span class="swatch" style="background: rgb(45,45,52)" title="rgb(45,45,52)"></span><span class="swatch" style="background: rgb(57,57,65)" title="rgb(57,57,65)"></span><span class="swatch" style="background: rgb(71,71,81)" title="rgb(71,71,81)"></span><span class="swatch" style="background: rgb(84,84,96)" title="rgb(84,84,96)"></span><span class="swatch" style="background: rgb(99,99,113)" title="rgb(99,99,113)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/deepslate_var1.png', 'Глубинный сланец (Вариант 1)')">
+            <img class="pixel-art" src="textures/deepslate_var1.png" alt="Глубинный сланец #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/deepslate_var2.png', 'Глубинный сланец (Вариант 2)')">
+            <img class="pixel-art" src="textures/deepslate_var2.png" alt="Глубинный сланец #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/deepslate_var3.png', 'Глубинный сланец (Вариант 3)')">
+            <img class="pixel-art" src="textures/deepslate_var3.png" alt="Глубинный сланец #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/deepslate_var4.png', 'Глубинный сланец (Вариант 4)')">
+            <img class="pixel-art" src="textures/deepslate_var4.png" alt="Глубинный сланец #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/deepslate_var5.png', 'Глубинный сланец (Вариант 5)')">
+            <img class="pixel-art" src="textures/deepslate_var5.png" alt="Глубинный сланец #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Песчаник</h3>
+              <code class="block-id">sandstone</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(184,164,114)" title="rgb(184,164,114)"></span><span class="swatch" style="background: rgb(200,181,130)" title="rgb(200,181,130)"></span><span class="swatch" style="background: rgb(213,195,146)" title="rgb(213,195,146)"></span><span class="swatch" style="background: rgb(223,208,162)" title="rgb(223,208,162)"></span><span class="swatch" style="background: rgb(235,220,179)" title="rgb(235,220,179)"></span><span class="swatch" style="background: rgb(246,232,196)" title="rgb(246,232,196)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/sandstone_var1.png', 'Песчаник (Вариант 1)')">
+            <img class="pixel-art" src="textures/sandstone_var1.png" alt="Песчаник #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sandstone_var2.png', 'Песчаник (Вариант 2)')">
+            <img class="pixel-art" src="textures/sandstone_var2.png" alt="Песчаник #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sandstone_var3.png', 'Песчаник (Вариант 3)')">
+            <img class="pixel-art" src="textures/sandstone_var3.png" alt="Песчаник #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sandstone_var4.png', 'Песчаник (Вариант 4)')">
+            <img class="pixel-art" src="textures/sandstone_var4.png" alt="Песчаник #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/sandstone_var5.png', 'Песчаник (Вариант 5)')">
+            <img class="pixel-art" src="textures/sandstone_var5.png" alt="Песчаник #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+
+        <div class="block-card">
+          <div class="card-header">
+            <div>
+              <h3>Красный песчаник</h3>
+              <code class="block-id">red_sandstone</code>
+            </div>
+            <div class="palette-bar">
+              <span class="swatch" style="background: rgb(135,57,23)" title="rgb(135,57,23)"></span><span class="swatch" style="background: rgb(156,68,28)" title="rgb(156,68,28)"></span><span class="swatch" style="background: rgb(176,80,34)" title="rgb(176,80,34)"></span><span class="swatch" style="background: rgb(191,94,43)" title="rgb(191,94,43)"></span><span class="swatch" style="background: rgb(205,110,55)" title="rgb(205,110,55)"></span><span class="swatch" style="background: rgb(218,126,70)" title="rgb(218,126,70)"></span>
+            </div>
+          </div>
+          <div class="variants-row">
+            
+          <div class="variant-item" onclick="inspectTile('textures/red_sandstone_var1.png', 'Красный песчаник (Вариант 1)')">
+            <img class="pixel-art" src="textures/red_sandstone_var1.png" alt="Красный песчаник #1">
+            <span class="v-label">#1</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sandstone_var2.png', 'Красный песчаник (Вариант 2)')">
+            <img class="pixel-art" src="textures/red_sandstone_var2.png" alt="Красный песчаник #2">
+            <span class="v-label">#2</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sandstone_var3.png', 'Красный песчаник (Вариант 3)')">
+            <img class="pixel-art" src="textures/red_sandstone_var3.png" alt="Красный песчаник #3">
+            <span class="v-label">#3</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sandstone_var4.png', 'Красный песчаник (Вариант 4)')">
+            <img class="pixel-art" src="textures/red_sandstone_var4.png" alt="Красный песчаник #4">
+            <span class="v-label">#4</span>
+          </div>
+        
+          <div class="variant-item" onclick="inspectTile('textures/red_sandstone_var5.png', 'Красный песчаник (Вариант 5)')">
+            <img class="pixel-art" src="textures/red_sandstone_var5.png" alt="Красный песчаник #5">
+            <span class="v-label">#5</span>
+          </div>
+        
+          </div>
+        </div>
+      
+        </div>
+      </section>
+    
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop" onclick="if(event.target === this) closeModal()">
+    <div class="modal">
+      <div class="modal-top">
+        <h3 id="modalTitle">Инспектор бесшовности (3x3 Тайлинг)</h3>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-dim);">
+        Проверка стыков: слева с направо, сверху вниз. Обратите внимание на отсутствие повторяющихся назойливых точек ("ловушек ярких пикселей").
+      </p>
+      <div class="tiling-viewport">
+        <div id="tilingCanvas" class="tiling-canvas">
+          <!-- 9 копий текстуры -->
+        </div>
+      </div>
+      <div class="modal-controls">
+        <label class="toggle-label">
+          <input type="checkbox" id="gridToggle" onchange="toggleGrid(this.checked)">
+          Показывать сетку блоков 3x3
+        </label>
+        <span style="color: var(--text-dim);">Масштаб: 600%</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function inspectTile(imgSrc, title) {
+      document.getElementById('modalTitle').textContent = title + ' — Проверка тайлинга 3x3';
+      const canvas = document.getElementById('tilingCanvas');
+      canvas.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        img.alt = 'tile';
+        canvas.appendChild(img);
+      }
+      document.getElementById('modalBackdrop').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modalBackdrop').style.display = 'none';
+    }
+
+    function toggleGrid(checked) {
+      const canvas = document.getElementById('tilingCanvas');
+      if (checked) {
+        canvas.classList.add('show-grid');
+      } else {
+        canvas.classList.remove('show-grid');
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>

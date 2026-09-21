@@ -69,7 +69,7 @@ export function generateViewerHtml({ runDate, seed, blocksData }) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minecraft Procedural Textures — ${runDate}</title>
+  <title>16x16 Procedural Textures — ${runDate}</title>
   <style>
     :root {
       --bg: #141416;
@@ -276,9 +276,9 @@ export function generateViewerHtml({ runDate, seed, blocksData }) {
 <body>
   <header>
     <div>
-      <h1>Minecraft 16x16 Texture Generator</h1>
+      <h1>16x16 Texture Generator</h1>
       <div style="font-size: 13px; color: var(--text-dim); margin-top: 4px;">
-        Процедурная генерация по правилам формы, палитры, тороидального шума и верхнего света
+        Процедурная генерация пиксельных текстур по правилам формы, палитры, тороидального шума и верхнего света
       </div>
     </div>
     <div style="display: flex; gap: 8px;">

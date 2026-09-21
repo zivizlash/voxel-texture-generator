@@ -56,7 +56,7 @@ async function main() {
   fs.mkdirSync(texturesDir, { recursive: true });
 
   console.log(`=======================================================`);
-  console.log(`  Minecraft 16x16 Procedural Texture Generator`);
+  console.log(`  16x16 Procedural Texture Generator`);
   console.log(`=======================================================`);
   console.log(`Базовый сид:     ${seed}`);
   console.log(`Вариантов/блок:  ${variantsCount}`);
