@@ -1,0 +1,11 @@
+{
+  "name": "minecraft-texture-generator",
+  "version": "1.0.0",
+  "description": "Procedural 16x16 Minecraft-style texture generator with seed, templates, palettes and tiling support",
+  "type": "module",
+  "scripts": {
+    "generate": "node generate.js"
+  },
+  "keywords": ["minecraft", "procedural", "texture-generator", "pixel-art"],
+  "license": "MIT"
+}
