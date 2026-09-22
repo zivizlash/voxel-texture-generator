@@ -243,6 +243,7 @@
       outline: none;
       user-select: none;
       white-space: nowrap;
+      text-decoration: none;
     }
 
     .btn-secondary {
@@ -324,6 +325,19 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
       margin-right: 2px;
+    }
+
+    .atlas-counter-pill {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 5px 9px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 2px;
     }
 
     /* Панель продвинутых настроек шума (fBm & Domain Warping) */
@@ -469,21 +483,132 @@
       padding: 0 28px;
     }
 
-    .category-section {
-      margin-bottom: 40px;
-    }
-
-    .category-header {
+    /* Панель каталога */
+    .catalog-toolbar {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .catalog-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .catalog-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .catalog-badge {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      background: #0f1015;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .catalog-toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Сворачиваемые категории материалов */
+    details.category-section {
+      margin-bottom: 20px;
+      background: rgba(18, 19, 25, 0.45);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    details.category-section:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    details.category-section[open] {
+      background: rgba(18, 19, 25, 0.25);
+    }
+
+    summary.category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      background: rgba(21, 22, 28, 0.7);
+      transition: background 0.15s ease;
+      gap: 12px;
+    }
+
+    summary.category-header::-webkit-details-marker {
+      display: none;
+    }
+
+    summary.category-header:hover {
+      background: rgba(29, 31, 41, 0.95);
+    }
+
+    details.category-section[open] > summary.category-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .category-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .category-collapse-arrow {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    summary.category-header:hover .category-collapse-arrow {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    details.category-section[open] > summary .category-collapse-arrow {
+      transform: rotate(0deg);
+      color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
+    details.category-section:not([open]) > summary .category-collapse-arrow {
+      transform: rotate(-90deg);
     }
 
     .category-header h2 {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: #fff;
       display: flex;
@@ -492,21 +617,33 @@
     }
 
     .category-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-dim);
       margin-top: 2px;
+    }
+
+    .category-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .category-count {
       font-size: 12px;
       font-family: 'JetBrains Mono', monospace;
       color: var(--text-sub);
+      background: #0d0e12;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 4px;
     }
 
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 16px;
+      padding: 16px;
     }
 
     .block-card {
@@ -972,11 +1109,10 @@
             <div class="brand-sub">Процедурный генератор пиксельных текстур • fBm • Domain Warping • Атлас 8×8</div>
           </div>
         </div>
-        <div class="nav-stats">
-          <span class="badge">Сид: <b id="activeSeedBadge">1337</b></span>
-          <span class="badge">Вариантов: <b id="activeVariantsBadge">5</b></span>
-          <span class="badge" id="atlasCountBadge">🗺️ В атлас: <b id="atlasSelectedCount">110</b></span>
-          <span class="badge badge-success" id="statusBadge">✓ Готов</span>
+        <div class="nav-actions">
+          <a href="painter.html" class="btn btn-secondary" title="Открыть редактор воксельных текстур 16×16">
+            🎨 Voxel painter
+          </a>
         </div>
       </div>
 
@@ -1026,6 +1162,10 @@
           <button type="button" class="btn btn-tiny" onclick="window.selectFirst64Variants()" title="Выбрать ровно 64 текстуры для сетки 8х8">⭐ 64 шт</button>
           <button type="button" class="btn btn-tiny" onclick="window.selectOnePerBlock()" title="Выбрать по 1 варианту каждого из 22 материалов">1️⃣ По 1 шт</button>
           
+          <span class="badge badge-accent atlas-counter-pill" id="atlasCountBadge" title="Количество вариантов, выбранных для включения в атлас">
+            Выбрано: <b id="atlasSelectedCount">110</b>
+          </span>
+
           <button id="openAtlasBtn" type="button" class="btn btn-atlas" onclick="window.openAtlasModal()" title="Сформировать текстурный атлас 8х8 блоков для предпросмотра">
             🗺️ Преобразовать в атлас
           </button>
@@ -1108,15 +1248,38 @@
   </header>
 
   <main>
+    <div class="catalog-toolbar">
+      <div class="catalog-toolbar-left">
+        <span class="catalog-title">Каталог материалов</span>
+        <span class="catalog-badge">22 блоков</span>
+      </div>
+      <div class="catalog-toolbar-actions">
+        <button type="button" class="btn btn-tiny" onclick="window.toggleAllCategories(true)" title="Развернуть все категории материалов">
+          ⊞ Развернуть все
+        </button>
+        <button type="button" class="btn btn-tiny" onclick="window.toggleAllCategories(false)" title="Свернуть все категории материалов">
+          ⊟ Свернуть все
+        </button>
+      </div>
+    </div>
     
-      <section class="category-section" id="cat_granular">
-        <div class="category-header">
-          <div>
-            <h2>Сыпучие материалы</h2>
-            <p class="category-desc">Высокочастотный зернистый шум, микро-гранулы, мягкие дюнные перепады</p>
+      <details class="category-section" id="cat_granular" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>Сыпучие материалы</h2>
+              <p class="category-desc">Высокочастотный зернистый шум, микро-гранулы, мягкие дюнные перепады</p>
+            </div>
           </div>
-          <span class="category-count">3 материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">3 материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           
         <div class="block-card" id="card_sand">
@@ -1311,17 +1474,26 @@
         </div>
       
         </div>
-      </section>
+      </details>
     
 
-      <section class="category-section" id="cat_clay">
-        <div class="category-header">
-          <div>
-            <h2>Глина и терракота</h2>
-            <p class="category-desc">Пластичная осадочная глина, шелковистая гладь и обожженная керамика</p>
+      <details class="category-section" id="cat_clay" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>Глина и терракота</h2>
+              <p class="category-desc">Пластичная осадочная глина, шелковистая гладь и обожженная керамика</p>
+            </div>
           </div>
-          <span class="category-count">2 материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">2 материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           
         <div class="block-card" id="card_clay">
@@ -1452,17 +1624,26 @@
         </div>
       
         </div>
-      </section>
+      </details>
     
 
-      <section class="category-section" id="cat_organic">
-        <div class="category-header">
-          <div>
-            <h2>Органика и почвы</h2>
-            <p class="category-desc">Рыхлая земля, прожилки корней, каменистые включения, споры и хвойный опад</p>
+      <details class="category-section" id="cat_organic" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>Органика и почвы</h2>
+              <p class="category-desc">Рыхлая земля, прожилки корней, каменистые включения, споры и хвойный опад</p>
+            </div>
           </div>
-          <span class="category-count">5 материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">5 материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           
         <div class="block-card" id="card_mud">
@@ -1785,17 +1966,26 @@
         </div>
       
         </div>
-      </section>
+      </details>
     
 
-      <section class="category-section" id="cat_stone">
-        <div class="category-header">
-          <div>
-            <h2>Каменные породы, кладка и кирпич</h2>
-            <p class="category-desc">Угловатые сколы Voronoi, кладка булыжника, перевязка кирпича, кристаллы</p>
+      <details class="category-section" id="cat_stone" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>Каменные породы, кладка и кирпич</h2>
+              <p class="category-desc">Угловатые сколы Voronoi, кладка булыжника, перевязка кирпича, кристаллы</p>
+            </div>
           </div>
-          <span class="category-count">6 материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">6 материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           
         <div class="block-card" id="card_stone">
@@ -2182,17 +2372,26 @@
         </div>
       
         </div>
-      </section>
+      </details>
     
 
-      <section class="category-section" id="cat_layered">
-        <div class="category-header">
-          <div>
-            <h2>Слоистые и спрессованные породы</h2>
-            <p class="category-desc">Горизонтальные пласты, волны сланцеватости, теневые швы и ступени</p>
+      <details class="category-section" id="cat_layered" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>Слоистые и спрессованные породы</h2>
+              <p class="category-desc">Горизонтальные пласты, волны сланцеватости, теневые швы и ступени</p>
+            </div>
           </div>
-          <span class="category-count">3 материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">3 материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           
         <div class="block-card" id="card_deepslate">
@@ -2387,17 +2586,26 @@
         </div>
       
         </div>
-      </section>
+      </details>
     
 
-      <section class="category-section" id="cat_wood">
-        <div class="category-header">
-          <div>
-            <h2>Древесина и конструкции</h2>
-            <p class="category-desc">Продольные волокна, годичные кольца на торцах и половицы</p>
+      <details class="category-section" id="cat_wood" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>Древесина и конструкции</h2>
+              <p class="category-desc">Продольные волокна, годичные кольца на торцах и половицы</p>
+            </div>
           </div>
-          <span class="category-count">3 материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">3 материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           
         <div class="block-card" id="card_planks">
@@ -2592,7 +2800,7 @@
         </div>
       
         </div>
-      </section>
+      </details>
     
   </main>
 
@@ -3867,13 +4075,13 @@
     const countBadge = document.getElementById('atlasCountBadge');
     if (countBadge) {
       if (totalSelected === 64) {
-        countBadge.className = 'badge badge-success';
+        countBadge.className = 'badge badge-success atlas-counter-pill';
         countBadge.title = 'Ровно 64 текстуры: идеально для сетки 8x8!';
       } else if (totalSelected > 64) {
-        countBadge.className = 'badge badge-warning';
+        countBadge.className = 'badge badge-warning atlas-counter-pill';
         countBadge.title = 'Выбрано больше 64: в атлас 8x8 попадут первые 64';
       } else {
-        countBadge.className = 'badge badge-accent';
+        countBadge.className = 'badge badge-accent atlas-counter-pill';
         countBadge.title = 'Сетка 8x8 вмещает до 64 блоков';
       }
     }
@@ -3903,6 +4111,12 @@
     });
     window.updateAtlasCounter();
     window.showToast('1️⃣ Выбран первый вариант каждого материала (' + Object.keys(BLOCKS).length + ' блоков)');
+  };
+
+  window.toggleAllCategories = function(openState) {
+    const sections = document.querySelectorAll('details.category-section');
+    sections.forEach(s => { s.open = !!openState; });
+    window.showToast(openState ? '⊞ Все категории развернуты' : '⊟ Все категории свернуты');
   };
 
   // Чтение параметров из UI ползунков

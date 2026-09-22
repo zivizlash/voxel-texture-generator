@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voxel Painter — Редактор текстур 16×16</title>
+  <meta name="description" content="Легковесный и удобный редактор пиксельных воксельных текстур 16x16 со встроенными палитрами материалов и проверкой тайлинга.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0e12;
+      --card-bg: #15161c;
+      --card-hover: #191b22;
+      --surface: #1d1e26;
+      --border: #2b2d38;
+      --border-focus: #58a6ff;
+      --text: #f0f2f8;
+      --text-dim: #9294a0;
+      --text-sub: #6e707c;
+      --accent: #10b981;
+      --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --accent-hover: #059669;
+      --accent-glow: rgba(16, 185, 129, 0.35);
+      --btn-bg: #1f212a;
+      --btn-hover: #292c37;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.06) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 0 0 40px 0;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Навигационная панель */
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 14, 18, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+    }
+
+    .navbar-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Кнопки */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: 1px solid var(--border);
+      outline: none;
+      user-select: none;
+      white-space: nowrap;
+      text-decoration: none;
+      color: var(--text);
+      background: var(--btn-bg);
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--btn-hover);
+      border-color: #4a4e61;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.12);
+      border-color: transparent;
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-active {
+      background: rgba(16, 185, 129, 0.2) !important;
+      border-color: var(--accent) !important;
+      color: #fff !important;
+    }
+
+    .btn-tiny {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+
+    /* Главный контейнер редактора */
+    main {
+      max-width: 1400px;
+      width: 100%;
+      margin: 24px auto 0;
+      padding: 0 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Панель инструментов */
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--card-bg);
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .blur-settings-group {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 10px;
+      background: #0f1015;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-left: 2px;
+      animation: fadeIn 0.15s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .blur-control-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .blur-inner-divider {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+    }
+
+    .blur-control-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .size-btn {
+      min-width: 28px;
+      padding: 3px 6px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .blur-strength-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 76px;
+      height: 5px;
+      background: #252834;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .blur-strength-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 6px var(--accent-glow);
+      transition: transform 0.1s;
+    }
+
+    .blur-strength-range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .blur-val-badge {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #34d399;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 1px 6px;
+      border-radius: 4px;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    /* Сетка рабочей зоны: слева холст, справа палитры и превью */
+    .editor-workspace {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .editor-workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Холст */
+    .canvas-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 448px;
+      height: 448px;
+      background: 
+        repeating-conic-gradient(#14151c 0% 25%, #1a1c24 0% 50%) 
+        50% / 28px 28px;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      cursor: crosshair;
+      user-select: none;
+      touch-action: none;
+    }
+
+    #paintCanvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    #gridOverlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      grid-template-rows: repeat(16, 1fr);
+    }
+
+    #gridOverlay.show-grid::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-size: calc(100% / 16) calc(100% / 16);
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    }
+
+    .canvas-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    /* Правая боковая панель с палитрами */
+    .sidebar-panels {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* Выбор цвета */
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .color-preview-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      border: 2px solid var(--border);
+      position: relative;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    #nativeColorInput {
+      position: absolute;
+      inset: -10px;
+      width: 70px;
+      height: 70px;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .color-hex-input {
+      background: #0f1015;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px 10px;
+      width: 105px;
+      text-transform: uppercase;
+      outline: none;
+    }
+
+    .color-hex-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Палитры материалов */
+    .palette-select-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .palette-dropdown {
+      background: #0f1015;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      flex: 1;
+    }
+
+    .palette-dropdown:focus {
+      border-color: var(--border-focus);
+    }
+
+    .swatches-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .swatch-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transition: transform 0.12s, border-color 0.12s;
+    }
+
+    .swatch-btn:hover {
+      transform: scale(1.15);
+      border-color: #fff;
+      z-index: 2;
+    }
+
+    .swatch-btn.active-swatch {
+      border-color: #fff;
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+
+    /* Тайлинг 3х3 предпросмотр */
+    .tiling-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tiling-canvas-wrap {
+      width: 96px;
+      height: 96px;
+      background: #0a0b0e;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      display: block;
+    }
+
+    #tilePreviewCanvas {
+      width: 96px;
+      height: 96px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    .tiling-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* Уведомление Toast */
+    .toast-notification {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e2029;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--accent);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px var(--accent-glow);
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .toast-notification.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <header class="top-navbar">
+    <div class="navbar-container">
+      <div class="brand">
+        <div class="brand-icon">🎨</div>
+        <div>
+          <h1>Voxel Painter</h1>
+          <div class="brand-sub">Редактор воксельных текстур 16×16 • Карандаш • Ластик • Палитры</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="index.html" class="btn" title="Вернуться к процедурному генератору текстур">
+          ▦ Texture Generator
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Панель управления и инструментов -->
+    <div class="editor-toolbar">
+      <div class="toolbar-group">
+        <button id="toolPencil" type="button" class="btn btn-active" onclick="setTool('pencil')" title="Карандаш (Горячая клавиша: B или P)">
+          ✏️ Карандаш
+        </button>
+        <button id="toolEraser" type="button" class="btn" onclick="setTool('eraser')" title="Ластик (Горячая клавиша: E)">
+          🧹 Ластик
+        </button>
+        <button id="toolBlur" type="button" class="btn" onclick="setTool('blur')" title="Размытие / Сглаживание пикселей (Горячая клавиша: R)">
+          🌫️ Размытие
+        </button>
+        <div id="blurSettingsGroup" class="blur-settings-group" style="display: none;">
+          <div class="blur-control-item" title="Размер кисти размытия (Клавиши [ и ] или 1, 2, 3)">
+            <span class="blur-control-label">Размер:</span>
+            <button type="button" class="btn btn-tiny size-btn btn-active" id="blurSize1" onclick="setBlurSize(1)" title="Размер 1x1 пиксель (1)">1px</button>
+            <button type="button" class="btn btn-tiny size-btn" id="blurSize2" onclick="setBlurSize(2)" title="Размер 2x2 пикселя (2)">2px</button>
+            <button type="button" class="btn btn-tiny size-btn" id="blurSize3" onclick="setBlurSize(3)" title="Размер 3x3 пикселя (3)">3px</button>
+          </div>
+          <div class="blur-inner-divider"></div>
+          <div class="blur-control-item" title="Сила размытия (от 10% до 100%)">
+            <span class="blur-control-label">Сила:</span>
+            <input 
+              type="range" 
+              id="blurStrengthSlider" 
+              min="10" 
+              max="100" 
+              step="5" 
+              value="50" 
+              class="blur-strength-range" 
+              oninput="setBlurStrength(this.value)" 
+              title="Сила размытия: от деликатного сглаживания до плотного смешивания"
+            />
+            <span class="blur-val-badge" id="blurStrengthVal">50%</span>
+          </div>
+        </div>
+        <button id="toolPicker" type="button" class="btn" onclick="setTool('picker')" title="Пипетка (Горячая клавиша: I)">
+          💧 Пипетка
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button type="button" class="btn" onclick="undo()" id="undoBtn" title="Отменить (Ctrl+Z)">
+          ↩ Отменить
+        </button>
+        <button type="button" class="btn" onclick="redo()" id="redoBtn" title="Повторить (Ctrl+Y)">
+          ↪ Повторить
+        </button>
+        <button type="button" class="btn" onclick="clearCanvasPrompt()" title="Очистить холст">
+          🗑️ Очистить
+        </button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <label class="btn" style="cursor: pointer;" title="Показать или скрыть сетку пикселей">
+          <input type="checkbox" id="gridToggle" checked onchange="toggleGrid(this.checked)" style="cursor: pointer;">
+          Сетка
+        </label>
+        <label class="btn" style="cursor: pointer;" title="Загрузить существующий PNG 16x16 для редактирования">
+          📂 Открыть PNG
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" style="display: none;" onchange="loadCustomImage(this)">
+        </label>
+        <button type="button" class="btn btn-primary" onclick="download16x16()" title="Скачать текстуру 16х16 в формате PNG">
+          💾 Скачать PNG (16×16)
+        </button>
+        <button type="button" class="btn" onclick="downloadHD(256)" title="Скачать увеличенное пиксельное изображение 256x256">
+          🔍 Скачать HD (256px)
+        </button>
+      </div>
+    </div>
+
+    <!-- Основная рабочая область -->
+    <div class="editor-workspace">
+      <!-- Холст для рисования -->
+      <div class="canvas-container">
+        <div class="canvas-wrapper" id="canvasWrapper">
+          <canvas id="paintCanvas" width="16" height="16"></canvas>
+          <div id="gridOverlay" class="show-grid"></div>
+        </div>
+
+        <div class="canvas-status-bar">
+          <span id="coordDisplay">X: 0, Y: 0</span>
+          <span id="toolDisplay">Инструмент: Карандаш</span>
+          <span>Размер: 16×16 px</span>
+        </div>
+      </div>
+
+      <!-- Боковые панели с палитрами и предпросмотром -->
+      <div class="sidebar-panels">
+        <!-- Панель выбора цвета -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>Активный цвет</span>
+          </div>
+          <div class="color-picker-row">
+            <div class="color-preview-box" id="colorPreviewBox" style="background-color: #3b82f6;">
+              <input type="color" id="nativeColorInput" value="#3b82f6" oninput="onColorPicked(this.value)">
+            </div>
+            <input type="text" id="colorHexInput" class="color-hex-input" value="#3B82F6" maxlength="7" onchange="onHexEntered(this.value)">
+            <span style="font-size: 12px; color: var(--text-dim);">Кликните на квадрат для системной палитры</span>
+          </div>
+        </div>
+
+        <!-- Предустановленные палитры материалов -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>Палитры материалов</span>
+          </div>
+          <div class="palette-select-group">
+            <select id="paletteSelect" class="palette-dropdown" onchange="loadMaterialPalette(this.value)">
+              <option value="stone">Камень (Stone)</option>
+              <option value="cobblestone">Булыжник (Cobblestone)</option>
+              <option value="bricks">Кирпич (Brick)</option>
+              <option value="planks">Доски (Planks)</option>
+              <option value="wood_log_side">Кора дерева (Log Side)</option>
+              <option value="sand">Песок (Sand)</option>
+              <option value="red_sand">Красный песок (Red Sand)</option>
+              <option value="gravel">Гравий (Gravel)</option>
+              <option value="clay">Глина (Clay)</option>
+              <option value="terracotta">Терракота (Terracotta)</option>
+              <option value="mud">Грязь (Mud)</option>
+              <option value="coarse_dirt">Каменистая земля (Dirt)</option>
+              <option value="deepslate">Глубинный сланец (Deepslate)</option>
+              <option value="sandstone">Песчаник (Sandstone)</option>
+              <option value="classic">Классическая 16-цветная</option>
+            </select>
+          </div>
+          <div class="swatches-grid" id="materialSwatches">
+            <!-- Заполняется динамически -->
+          </div>
+        </div>
+
+        <!-- Недавние цвета -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>Недавние цвета</span>
+          </div>
+          <div class="swatches-grid" id="recentSwatches">
+            <!-- Заполняется по мере рисования -->
+          </div>
+        </div>
+
+        <!-- Предпросмотр бесшовности (3x3 Тайлинг) -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>Бесшовность (3×3 Тайлинг)</span>
+          </div>
+          <div class="tiling-box">
+            <div class="tiling-canvas-wrap">
+              <canvas id="tilePreviewCanvas" width="48" height="48"></canvas>
+            </div>
+            <div class="tiling-desc">
+              В реальном времени показывает, как текстура будет стыковаться сама с собой при повторении в воксельном мире.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastNotification" class="toast-notification"></div>
+
+  <script>
+    // --- Предустановленные палитры материалов (взяты из процедурного генератора) ---
+    const MATERIAL_PALETTES = {
+      stone: ['#4b4f58', '#5b616b', '#6b7280', '#7c8594', '#8d96a7', '#a1aab9'],
+      cobblestone: ['#32353d', '#454a54', '#585e6b', '#6d7584', '#818a9c', '#98a2b5'],
+      bricks: ['#5c231a', '#742e23', '#8b3b2e', '#a34839', '#ba5746', '#c96a58'],
+      planks: ['#694e2e', '#7e5f39', '#947247', '#aa8556', '#be9866', '#cfa978'],
+      wood_log_side: ['#382b1d', '#4a3a28', '#5c4934', '#6f5a42', '#816b50'],
+      sand: ['#bca874', '#cbba85', '#d7c996', '#dfd5a5', '#e8e0b5', '#f2ebd0'],
+      red_sand: ['#8f4019', '#a54d20', '#b85b28', '#c86c34', '#d57e44', '#e09257'],
+      gravel: ['#5c5757', '#6c6767', '#7b7677', '#8a8687', '#9c9798', '#aba7a8'],
+      clay: ['#838a9a', '#949ba9', '#a5acb9', '#b5bdc8', '#c5cbd4'],
+      terracotta: ['#794939', '#8a5543', '#9c624f', '#ae705c', '#bf7e69', '#ce8d78'],
+      mud: ['#3c3127', '#493d32', '#57493d', '#645649', '#726355'],
+      coarse_dirt: ['#4d3724', '#5c432d', '#6c5037', '#7d5e42', '#8d6c4d', '#9e7b59'],
+      deepslate: ['#232429', '#2e3037', '#393c45', '#454953', '#525763'],
+      sandstone: ['#a8996e', '#baa97c', '#caba8c', '#d7c89b', '#e2d6ab', '#eee4bd'],
+      classic: ['#000000', '#1d2b53', '#7e2553', '#008751', '#ab5236', '#5f574f', '#c2c3c7', '#fff1e8', '#ff004d', '#ffa300', '#ffec27', '#00e436', '#29adff', '#83769c', '#ff77a8', '#ffccaa']
+    };
+
+    // Состояние холста 16x16: массив 16x16 строк цветов hex или null (прозрачный)
+    const GRID_SIZE = 16;
+    let pixels = Array(GRID_SIZE * GRID_SIZE).fill(null);
+    let history = [];
+    let historyIndex = -1;
+    const MAX_HISTORY = 40;
+
+    let currentTool = 'pencil'; // 'pencil', 'eraser', 'blur', 'picker'
+    let blurSize = 1; // 1, 2, 3
+    let blurStrength = 0.5; // 0.1 to 1.0 (10% to 100%)
+    let currentColor = '#6b7280';
+    let isDrawing = false;
+    let recentColors = ['#4b4f58', '#6b7280', '#8d96a7', '#947247', '#ba5746', '#d7c996'];
+
+    const canvas = document.getElementById('paintCanvas');
+    const ctx = canvas.getContext('2d');
+    const tileCanvas = document.getElementById('tilePreviewCanvas');
+    const tileCtx = tileCanvas.getContext('2d');
+
+    // Инициализация
+    function init() {
+      loadInitialPixels();
+      saveHistory();
+      renderCanvas();
+      updateTiling();
+      loadMaterialPalette('stone');
+      renderRecentColors();
+      setupCanvasEvents();
+      setupHotkeys();
+    }
+
+    // Загрузка начальных пикселей (из localStorage или по умолчанию лёгкий камень)
+    function loadInitialPixels() {
+      const saved = localStorage.getItem('voxel_painter_16x16');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length === 256) {
+            pixels = parsed;
+            return;
+          }
+        } catch (e) {}
+      }
+      // По умолчанию заполняем приятным базовым серым камнем
+      const basePal = MATERIAL_PALETTES.stone;
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const shade = basePal[(x * 3 + y * 7) % basePal.length];
+          pixels[y * 16 + x] = shade;
+        }
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem('voxel_painter_16x16', JSON.stringify(pixels));
+      } catch (e) {}
+    }
+
+    // Отрисовка основного холста
+    function renderCanvas() {
+      ctx.clearRect(0, 0, 16, 16);
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const color = pixels[y * 16 + x];
+          if (color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+      updateTiling();
+    }
+
+    // Обновление тайлинг-превью 3х3 (48х48)
+    function updateTiling() {
+      tileCtx.clearRect(0, 0, 48, 48);
+      for (let ty = 0; ty < 3; ty++) {
+        for (let tx = 0; tx < 3; tx++) {
+          tileCtx.drawImage(canvas, tx * 16, ty * 16);
+        }
+      }
+    }
+
+    // Сохранение шага в историю
+    function saveHistory() {
+      if (historyIndex < history.length - 1) {
+        history = history.slice(0, historyIndex + 1);
+      }
+      history.push([...pixels]);
+      if (history.length > MAX_HISTORY) {
+        history.shift();
+      } else {
+        historyIndex++;
+      }
+      updateUndoRedoButtons();
+      saveToStorage();
+    }
+
+    function undo() {
+      if (historyIndex > 0) {
+        historyIndex--;
+        pixels = [...history[historyIndex]];
+        renderCanvas();
+        updateUndoRedoButtons();
+        saveToStorage();
+        showToast('↩ Отменено');
+      }
+    }
+
+    function redo() {
+      if (historyIndex < history.length - 1) {
+        historyIndex++;
+        pixels = [...history[historyIndex]];
+        renderCanvas();
+        updateUndoRedoButtons();
+        saveToStorage();
+        showToast('↪ Повторено');
+      }
+    }
+
+    function updateUndoRedoButtons() {
+      const uBtn = document.getElementById('undoBtn');
+      const rBtn = document.getElementById('redoBtn');
+      if (uBtn) uBtn.style.opacity = historyIndex > 0 ? '1' : '0.4';
+      if (rBtn) rBtn.style.opacity = historyIndex < history.length - 1 ? '1' : '0.4';
+    }
+
+    // Инструменты
+    function setTool(tool) {
+      currentTool = tool;
+      ['toolPencil', 'toolEraser', 'toolBlur', 'toolPicker'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('btn-active');
+      });
+      const activeEl = document.getElementById('tool' + tool.charAt(0).toUpperCase() + tool.slice(1));
+      if (activeEl) activeEl.classList.add('btn-active');
+
+      const settingsGroup = document.getElementById('blurSettingsGroup');
+      if (settingsGroup) {
+        settingsGroup.style.display = (tool === 'blur') ? 'inline-flex' : 'none';
+      }
+
+      const percent = Math.round(blurStrength * 100);
+      const names = {
+        pencil: 'Карандаш',
+        eraser: 'Ластик',
+        blur: `Размытие (${blurSize}px, ${percent}%)`,
+        picker: 'Пипетка'
+      };
+      document.getElementById('toolDisplay').textContent = 'Инструмент: ' + (names[tool] || tool);
+    }
+
+    function setBlurSize(size) {
+      blurSize = Math.max(1, Math.min(3, size));
+      [1, 2, 3].forEach(s => {
+        const btn = document.getElementById('blurSize' + s);
+        if (btn) {
+          if (s === blurSize) {
+            btn.classList.add('btn-active');
+          } else {
+            btn.classList.remove('btn-active');
+          }
+        }
+      });
+      const percent = Math.round(blurStrength * 100);
+      if (currentTool === 'blur') {
+        document.getElementById('toolDisplay').textContent = `Инструмент: Размытие (${blurSize}px, ${percent}%)`;
+      }
+      showToast(`Размер размытия: ${blurSize}px`);
+    }
+
+    function setBlurStrength(val) {
+      const percent = parseInt(val, 10);
+      blurStrength = Math.max(0.1, Math.min(1.0, percent / 100));
+      const badge = document.getElementById('blurStrengthVal');
+      if (badge) badge.textContent = percent + '%';
+      const slider = document.getElementById('blurStrengthSlider');
+      if (slider && slider.value !== String(percent)) slider.value = percent;
+
+      if (currentTool === 'blur') {
+        document.getElementById('toolDisplay').textContent = `Инструмент: Размытие (${blurSize}px, ${percent}%)`;
+      }
+    }
+
+    function hexToRgb(hex) {
+      if (!hex) return null;
+      const clean = hex.replace('#', '');
+      const num = parseInt(clean, 16);
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255
+      };
+    }
+
+    function rgbToHexValues(r, g, b) {
+      const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+      const toHex = v => clamp(v).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+    }
+
+    // Размытие пикселей с учетом размера кисти и тороидальной бесшовности
+    function applyBlur(cx, cy) {
+      const targetOffsets = [];
+      if (blurSize === 1) {
+        targetOffsets.push([0, 0]);
+      } else if (blurSize === 2) {
+        targetOffsets.push([0, 0], [1, 0], [0, 1], [1, 1]);
+      } else if (blurSize === 3) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            targetOffsets.push([dx, dy]);
+          }
+        }
+      }
+
+      const snapshot = [...pixels];
+      let changed = false;
+
+      targetOffsets.forEach(([ox, oy]) => {
+        const px = (cx + ox + 16) % 16;
+        const py = (cy + oy + 16) % 16;
+        const pIdx = py * 16 + px;
+        const centerCol = snapshot[pIdx];
+
+        let sumR = 0, sumG = 0, sumB = 0, count = 0;
+
+        // Собираем соседей 3х3 вокруг пикселя с тороидальным зацикливанием
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = (px + dx + 16) % 16;
+            const ny = (py + dy + 16) % 16;
+            const col = snapshot[ny * 16 + nx];
+            if (col) {
+              const rgb = hexToRgb(col);
+              if (rgb) {
+                const weight = (dx === 0 && dy === 0) ? 2 : 1;
+                sumR += rgb.r * weight;
+                sumG += rgb.g * weight;
+                sumB += rgb.b * weight;
+                count += weight;
+              }
+            }
+          }
+        }
+
+        if (count > 0 && centerCol) {
+          const avgR = sumR / count;
+          const avgG = sumG / count;
+          const avgB = sumB / count;
+
+          const curRgb = hexToRgb(centerCol);
+          // Смешивание текущего пикселя со средней яркостью окружения с учетом выбранной силы
+          const factor = blurStrength;
+          const resR = curRgb.r * (1 - factor) + avgR * factor;
+          const resG = curRgb.g * (1 - factor) + avgG * factor;
+          const resB = curRgb.b * (1 - factor) + avgB * factor;
+
+          const newHex = rgbToHexValues(resR, resG, resB);
+          if (pixels[pIdx] !== newHex) {
+            pixels[pIdx] = newHex;
+            changed = true;
+          }
+        }
+      });
+
+      if (changed) {
+        renderCanvas();
+      }
+    }
+
+    // Рисование пикселя
+    function applyTool(x, y) {
+      if (x < 0 || x >= 16 || y < 0 || y >= 16) return;
+      const idx = y * 16 + x;
+
+      if (currentTool === 'pencil') {
+        if (pixels[idx] !== currentColor) {
+          pixels[idx] = currentColor;
+          addRecentColor(currentColor);
+          renderCanvas();
+        }
+      } else if (currentTool === 'eraser') {
+        if (pixels[idx] !== null) {
+          pixels[idx] = null;
+          renderCanvas();
+        }
+      } else if (currentTool === 'picker') {
+        const picked = pixels[idx];
+        if (picked) {
+          setColor(picked);
+          setTool('pencil');
+          showToast('Цвет скопирован: ' + picked);
+        }
+      } else if (currentTool === 'blur') {
+        applyBlur(x, y);
+      }
+    }
+
+    // Координаты из события мыши/тача
+    function getCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const x = Math.floor(((clientX - rect.left) / rect.width) * 16);
+      const y = Math.floor(((clientY - rect.top) / rect.height) * 16);
+      return { x: Math.max(0, Math.min(15, x)), y: Math.max(0, Math.min(15, y)) };
+    }
+
+    function setupCanvasEvents() {
+      const wrapper = document.getElementById('canvasWrapper');
+
+      const onStart = (e) => {
+        e.preventDefault();
+        isDrawing = true;
+        const { x, y } = getCoords(e);
+        applyTool(x, y);
+      };
+
+      const onMove = (e) => {
+        const { x, y } = getCoords(e);
+        document.getElementById('coordDisplay').textContent = `X: ${x}, Y: ${y}`;
+        if (isDrawing && (currentTool === 'pencil' || currentTool === 'eraser' || currentTool === 'blur')) {
+          applyTool(x, y);
+        }
+      };
+
+      const onEnd = () => {
+        if (isDrawing) {
+          isDrawing = false;
+          saveHistory();
+        }
+      };
+
+      wrapper.addEventListener('mousedown', onStart);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onEnd);
+
+      wrapper.addEventListener('touchstart', onStart, { passive: false });
+      wrapper.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onEnd);
+    }
+
+    // Цвета и палитры
+    function setColor(hex) {
+      currentColor = hex.toUpperCase();
+      document.getElementById('colorPreviewBox').style.backgroundColor = currentColor;
+      document.getElementById('nativeColorInput').value = currentColor;
+      document.getElementById('colorHexInput').value = currentColor;
+      highlightActiveSwatch();
+    }
+
+    function onColorPicked(hex) {
+      setColor(hex);
+      addRecentColor(hex);
+    }
+
+    function onHexEntered(val) {
+      let clean = val.trim();
+      if (!clean.startsWith('#')) clean = '#' + clean;
+      if (/^#[0-9A-Fa-f]{6}$/.test(clean)) {
+        setColor(clean);
+        addRecentColor(clean);
+      } else {
+        document.getElementById('colorHexInput').value = currentColor;
+      }
+    }
+
+    function addRecentColor(hex) {
+      const norm = hex.toUpperCase();
+      recentColors = recentColors.filter(c => c !== norm);
+      recentColors.unshift(norm);
+      if (recentColors.length > 12) recentColors.pop();
+      renderRecentColors();
+    }
+
+    function renderRecentColors() {
+      const container = document.getElementById('recentSwatches');
+      container.innerHTML = '';
+      recentColors.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'swatch-btn';
+        btn.style.backgroundColor = c;
+        btn.title = c;
+        btn.onclick = () => setColor(c);
+        container.appendChild(btn);
+      });
+      highlightActiveSwatch();
+    }
+
+    function loadMaterialPalette(name) {
+      const pal = MATERIAL_PALETTES[name] || MATERIAL_PALETTES.stone;
+      const container = document.getElementById('materialSwatches');
+      container.innerHTML = '';
+      pal.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'swatch-btn';
+        btn.style.backgroundColor = c;
+        btn.title = c;
+        btn.onclick = () => setColor(c);
+        container.appendChild(btn);
+      });
+      if (pal.length > 0) {
+        setColor(pal[Math.floor(pal.length / 2)]);
+      }
+      highlightActiveSwatch();
+    }
+
+    function highlightActiveSwatch() {
+      document.querySelectorAll('.swatch-btn').forEach(btn => {
+        const bg = rgbToHex(btn.style.backgroundColor);
+        if (bg && bg.toUpperCase() === currentColor) {
+          btn.classList.add('active-swatch');
+        } else {
+          btn.classList.remove('active-swatch');
+        }
+      });
+    }
+
+    function rgbToHex(rgbStr) {
+      if (!rgbStr) return '';
+      if (rgbStr.startsWith('#')) return rgbStr;
+      const m = rgbStr.match(/\d+/g);
+      if (!m || m.length < 3) return '';
+      const r = parseInt(m[0], 10).toString(16).padStart(2, '0');
+      const g = parseInt(m[1], 10).toString(16).padStart(2, '0');
+      const b = parseInt(m[2], 10).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+
+    function toggleGrid(show) {
+      const grid = document.getElementById('gridOverlay');
+      if (grid) {
+        grid.className = show ? 'show-grid' : '';
+      }
+    }
+
+    function clearCanvasPrompt() {
+      if (confirm('Очистить весь холст?')) {
+        pixels.fill(null);
+        renderCanvas();
+        saveHistory();
+        showToast('🗑️ Холст очищен');
+      }
+    }
+
+    // Скачивание 16x16 PNG
+    function download16x16() {
+      const link = document.createElement('a');
+      link.download = 'voxel_texture_16x16.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('💾 Текстура 16×16 сохранена');
+    }
+
+    // Скачивание увеличенного изображения (HD)
+    function downloadHD(size = 256) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = size;
+      offscreen.height = size;
+      const oCtx = offscreen.getContext('2d');
+      oCtx.imageSmoothingEnabled = false;
+      oCtx.drawImage(canvas, 0, 0, size, size);
+
+      const link = document.createElement('a');
+      link.download = `voxel_texture_${size}x${size}.png`;
+      link.href = offscreen.toDataURL('image/png');
+      link.click();
+      showToast(`🔍 Текстура ${size}×${size} сохранена`);
+    }
+
+    // Загрузка стороннего PNG файла
+    function loadCustomImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const temp = document.createElement('canvas');
+          temp.width = 16;
+          temp.height = 16;
+          const tCtx = temp.getContext('2d');
+          tCtx.imageSmoothingEnabled = false;
+          tCtx.drawImage(img, 0, 0, 16, 16);
+          const imgData = tCtx.getImageData(0, 0, 16, 16).data;
+
+          for (let i = 0; i < 256; i++) {
+            const r = imgData[i * 4];
+            const g = imgData[i * 4 + 1];
+            const b = imgData[i * 4 + 2];
+            const a = imgData[i * 4 + 3];
+            if (a < 10) {
+              pixels[i] = null;
+            } else {
+              const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+              pixels[i] = hex;
+            }
+          }
+          renderCanvas();
+          saveHistory();
+          showToast('📂 Файл успешно открыт!');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    }
+
+    // Горячие клавиши
+    function setupHotkeys() {
+      window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.key === 'b' || e.key === 'B' || e.key === 'p' || e.key === 'P' || e.key === 'и' || e.key === 'И') {
+          setTool('pencil');
+        } else if (e.key === 'e' || e.key === 'E' || e.key === 'у' || e.key === 'У') {
+          setTool('eraser');
+        } else if (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К') {
+          setTool('blur');
+        } else if (e.key === 'i' || e.key === 'I' || e.key === 'ш' || e.key === 'Ш') {
+          setTool('picker');
+        } else if (e.key === '[' || e.key === '{' || e.key === 'х' || e.key === 'Х') {
+          if (blurSize > 1) setBlurSize(blurSize - 1);
+        } else if (e.key === ']' || e.key === '}' || e.key === 'ъ' || e.key === 'Ъ') {
+          if (blurSize < 3) setBlurSize(blurSize + 1);
+        } else if (currentTool === 'blur' && (e.key === '1' || e.key === '2' || e.key === '3')) {
+          setBlurSize(parseInt(e.key, 10));
+        } else if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'я')) {
+          e.preventDefault();
+          undo();
+        } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'н')) {
+          e.preventDefault();
+          redo();
+        }
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>

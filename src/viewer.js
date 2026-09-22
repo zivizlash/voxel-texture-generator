@@ -104,18 +104,27 @@ export function generateViewerHtml({
     }).join('\n');
 
     return `
-      <section class="category-section" id="cat_${catKey}">
-        <div class="category-header">
-          <div>
-            <h2>${catMeta.title}</h2>
-            <p class="category-desc">${catMeta.desc}</p>
+      <details class="category-section" id="cat_${catKey}" open>
+        <summary class="category-header">
+          <div class="category-header-left">
+            <span class="category-collapse-arrow" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <div>
+              <h2>${catMeta.title}</h2>
+              <p class="category-desc">${catMeta.desc}</p>
+            </div>
           </div>
-          <span class="category-count">${blocks.length} материалов</span>
-        </div>
+          <div class="category-header-right">
+            <span class="category-count">${blocks.length} материалов</span>
+          </div>
+        </summary>
         <div class="cards-grid">
           ${cardsHtml}
         </div>
-      </section>
+      </details>
     `;
   }).join('\n');
 
@@ -364,6 +373,7 @@ export function generateViewerHtml({
       outline: none;
       user-select: none;
       white-space: nowrap;
+      text-decoration: none;
     }
 
     .btn-secondary {
@@ -445,6 +455,19 @@ export function generateViewerHtml({
       text-transform: uppercase;
       letter-spacing: 0.04em;
       margin-right: 2px;
+    }
+
+    .atlas-counter-pill {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 5px 9px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 2px;
     }
 
     /* Панель продвинутых настроек шума (fBm & Domain Warping) */
@@ -590,21 +613,132 @@ export function generateViewerHtml({
       padding: 0 28px;
     }
 
-    .category-section {
-      margin-bottom: 40px;
-    }
-
-    .category-header {
+    /* Панель каталога */
+    .catalog-toolbar {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .catalog-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .catalog-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .catalog-badge {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      background: #0f1015;
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .catalog-toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Сворачиваемые категории материалов */
+    details.category-section {
+      margin-bottom: 20px;
+      background: rgba(18, 19, 25, 0.45);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    details.category-section:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    details.category-section[open] {
+      background: rgba(18, 19, 25, 0.25);
+    }
+
+    summary.category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 18px;
+      cursor: pointer;
+      user-select: none;
+      list-style: none;
+      background: rgba(21, 22, 28, 0.7);
+      transition: background 0.15s ease;
+      gap: 12px;
+    }
+
+    summary.category-header::-webkit-details-marker {
+      display: none;
+    }
+
+    summary.category-header:hover {
+      background: rgba(29, 31, 41, 0.95);
+    }
+
+    details.category-section[open] > summary.category-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .category-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .category-collapse-arrow {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-dim);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+
+    summary.category-header:hover .category-collapse-arrow {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    details.category-section[open] > summary .category-collapse-arrow {
+      transform: rotate(0deg);
+      color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
+    details.category-section:not([open]) > summary .category-collapse-arrow {
+      transform: rotate(-90deg);
     }
 
     .category-header h2 {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
       color: #fff;
       display: flex;
@@ -613,21 +747,33 @@ export function generateViewerHtml({
     }
 
     .category-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-dim);
       margin-top: 2px;
+    }
+
+    .category-header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .category-count {
       font-size: 12px;
       font-family: 'JetBrains Mono', monospace;
       color: var(--text-sub);
+      background: #0d0e12;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 4px;
     }
 
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
       gap: 16px;
+      padding: 16px;
     }
 
     .block-card {
@@ -1093,11 +1239,10 @@ export function generateViewerHtml({
             <div class="brand-sub">Процедурный генератор пиксельных текстур • fBm • Domain Warping • Атлас 8×8</div>
           </div>
         </div>
-        <div class="nav-stats">
-          <span class="badge">Сид: <b id="activeSeedBadge">${seed}</b></span>
-          <span class="badge">Вариантов: <b id="activeVariantsBadge">5</b></span>
-          <span class="badge" id="atlasCountBadge">🗺️ В атлас: <b id="atlasSelectedCount">${allBlocks.length * 5}</b></span>
-          <span class="badge badge-success" id="statusBadge">✓ Готов</span>
+        <div class="nav-actions">
+          <a href="painter.html" class="btn btn-secondary" title="Открыть редактор воксельных текстур 16×16">
+            🎨 Voxel painter
+          </a>
         </div>
       </div>
 
@@ -1147,6 +1292,10 @@ export function generateViewerHtml({
           <button type="button" class="btn btn-tiny" onclick="window.selectFirst64Variants()" title="Выбрать ровно 64 текстуры для сетки 8х8">⭐ 64 шт</button>
           <button type="button" class="btn btn-tiny" onclick="window.selectOnePerBlock()" title="Выбрать по 1 варианту каждого из ${allBlocks.length} материалов">1️⃣ По 1 шт</button>
           
+          <span class="badge badge-accent atlas-counter-pill" id="atlasCountBadge" title="Количество вариантов, выбранных для включения в атлас">
+            Выбрано: <b id="atlasSelectedCount">${allBlocks.length * 5}</b>
+          </span>
+
           <button id="openAtlasBtn" type="button" class="btn btn-atlas" onclick="window.openAtlasModal()" title="Сформировать текстурный атлас 8х8 блоков для предпросмотра">
             🗺️ Преобразовать в атлас
           </button>
@@ -1229,6 +1378,20 @@ export function generateViewerHtml({
   </header>
 
   <main>
+    <div class="catalog-toolbar">
+      <div class="catalog-toolbar-left">
+        <span class="catalog-title">Каталог материалов</span>
+        <span class="catalog-badge">${allBlocks.length} блоков</span>
+      </div>
+      <div class="catalog-toolbar-actions">
+        <button type="button" class="btn btn-tiny" onclick="window.toggleAllCategories(true)" title="Развернуть все категории материалов">
+          ⊞ Развернуть все
+        </button>
+        <button type="button" class="btn btn-tiny" onclick="window.toggleAllCategories(false)" title="Свернуть все категории материалов">
+          ⊟ Свернуть все
+        </button>
+      </div>
+    </div>
     ${sectionsHtml}
   </main>
 

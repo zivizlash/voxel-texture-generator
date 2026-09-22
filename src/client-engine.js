@@ -1191,13 +1191,13 @@ export const CLIENT_ENGINE_SCRIPT = `
     const countBadge = document.getElementById('atlasCountBadge');
     if (countBadge) {
       if (totalSelected === 64) {
-        countBadge.className = 'badge badge-success';
+        countBadge.className = 'badge badge-success atlas-counter-pill';
         countBadge.title = 'Ровно 64 текстуры: идеально для сетки 8x8!';
       } else if (totalSelected > 64) {
-        countBadge.className = 'badge badge-warning';
+        countBadge.className = 'badge badge-warning atlas-counter-pill';
         countBadge.title = 'Выбрано больше 64: в атлас 8x8 попадут первые 64';
       } else {
-        countBadge.className = 'badge badge-accent';
+        countBadge.className = 'badge badge-accent atlas-counter-pill';
         countBadge.title = 'Сетка 8x8 вмещает до 64 блоков';
       }
     }
@@ -1227,6 +1227,12 @@ export const CLIENT_ENGINE_SCRIPT = `
     });
     window.updateAtlasCounter();
     window.showToast('1️⃣ Выбран первый вариант каждого материала (' + Object.keys(BLOCKS).length + ' блоков)');
+  };
+
+  window.toggleAllCategories = function(openState) {
+    const sections = document.querySelectorAll('details.category-section');
+    sections.forEach(s => { s.open = !!openState; });
+    window.showToast(openState ? '⊞ Все категории развернуты' : '⊟ Все категории свернуты');
   };
 
   // Чтение параметров из UI ползунков
