@@ -1243,6 +1243,9 @@ export function generateViewerHtml({
           <a href="painter.html" class="btn btn-secondary" title="Открыть редактор воксельных текстур 16×16">
             🎨 Voxel painter
           </a>
+          <a href="normalizer.html" class="btn btn-secondary" title="Нормализация палитры и контраста текстур">
+            🪄 Texture normalizer
+          </a>
         </div>
       </div>
 

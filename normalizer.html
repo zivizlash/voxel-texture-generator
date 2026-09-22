@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Texture Normalizer — Цветовая нормализация текстур</title>
+  <meta name="description" content="Инструмент автоматической нормализации и согласования палитр между несколькими воксельными текстурами с регулировкой контрастности.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0e12;
+      --card-bg: #15161c;
+      --card-hover: #1a1c24;
+      --surface: #1d1e26;
+      --border: #2b2d38;
+      --border-focus: #58a6ff;
+      --text: #f0f2f8;
+      --text-dim: #9294a0;
+      --text-sub: #6e707c;
+      --accent: #8b5cf6;
+      --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+      --accent-hover: #7c3aed;
+      --accent-glow: rgba(139, 92, 246, 0.35);
+      --success: #10b981;
+      --btn-bg: #1f212a;
+      --btn-hover: #292c37;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 0 0 60px 0;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Навигация */
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 14, 18, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+    }
+
+    .navbar-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Кнопки */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: 1px solid var(--border);
+      outline: none;
+      user-select: none;
+      white-space: nowrap;
+      text-decoration: none;
+      color: var(--text);
+      background: var(--btn-bg);
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--btn-hover);
+      border-color: #4a4e61;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.12);
+      border-color: transparent;
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-tiny {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+
+    /* Основной контейнер */
+    main {
+      max-width: 1400px;
+      width: 100%;
+      margin: 24px auto 0;
+      padding: 0 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Панель настроек и действий */
+    .controls-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .controls-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 14px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .params-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+
+    .param-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #0f1015;
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .param-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .param-header label {
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .param-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #c084fc;
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.25);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .param-desc {
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+
+    .custom-range {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #252834;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .custom-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 8px var(--accent-glow);
+      transition: transform 0.1s;
+    }
+
+    .custom-range::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .custom-select {
+      background: #171821;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    /* Действия в карточке */
+    .actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    .actions-left, .actions-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Сетка трех текстур */
+    .slots-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 1020px) {
+      .slots-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .slot-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+
+    .slot-card:hover {
+      border-color: #3f4255;
+    }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slot-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slot-badge {
+      background: #1e202b;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .slot-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    /* Область холстов Before & After */
+    .canvas-duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: #090a0d;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+    }
+
+    .canvas-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas-box-title {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .pixel-canvas-wrapper {
+      width: 112px;
+      height: 112px;
+      background: 
+        repeating-conic-gradient(#14151c 0% 25%, #1c1e28 0% 50%) 
+        50% / 14px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .pixel-canvas {
+      width: 112px;
+      height: 112px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    /* Загрузка и дропзона */
+    .upload-zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px;
+      border: 1px dashed rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      font-size: 12px;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    .upload-zone:hover {
+      background: rgba(139, 92, 246, 0.08);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .palette-swatches-strip {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-height: 24px;
+      background: #0d0e13;
+      padding: 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .strip-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+      display: inline-block;
+      cursor: help;
+    }
+
+    /* 3D превью куба */
+    .cube-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .cube-section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .cube-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      padding: 40px 20px;
+      background: #08090c;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+      perspective: 900px;
+      flex-wrap: wrap;
+    }
+
+    .cube-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .cube-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .voxel-cube {
+      width: 128px;
+      height: 128px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-28deg) rotateY(45deg);
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 128px;
+      height: 128px;
+      background: #000;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid rgba(0, 0, 0, 0.5);
+    }
+
+    .face-top {
+      transform: rotateX(90deg) translateZ(64px);
+      filter: brightness(1.08);
+    }
+
+    .face-front {
+      transform: rotateY(0deg) translateZ(64px);
+      filter: brightness(0.92);
+    }
+
+    .face-right {
+      transform: rotateY(90deg) translateZ(64px);
+      filter: brightness(0.78);
+    }
+
+    .face-bottom {
+      transform: rotateX(-90deg) translateZ(64px);
+      filter: brightness(0.70);
+    }
+
+    .cube-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .cube-btn {
+      padding: 5px 11px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      background: #171822;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .cube-btn:hover {
+      background: #202330;
+      border-color: #4a4e61;
+      color: #fff;
+    }
+
+    .cube-btn.active {
+      background: rgba(139, 92, 246, 0.18);
+      border-color: var(--accent);
+      color: #c084fc;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.25);
+    }
+
+    .merge-card {
+      border: 1px solid rgba(16, 185, 129, 0.35) !important;
+      background: linear-gradient(180deg, #15161c 0%, #101319 100%) !important;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 18px rgba(16, 185, 129, 0.08) !important;
+    }
+
+    /* Уведомление Toast */
+    .toast-notification {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e2029;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--accent);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 12px var(--accent-glow);
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .toast-notification.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <header class="top-navbar">
+    <div class="navbar-container">
+      <div class="brand">
+        <div class="brand-icon">🪄</div>
+        <div>
+          <h1>Texture Normalizer</h1>
+          <div class="brand-sub">Нормализация палитры и контраста для воксельных текстур (до 3 текстур)</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="painter.html" class="btn" title="Редактор воксельных текстур">
+          🎨 Voxel painter
+        </a>
+        <a href="index.html" class="btn" title="Вернуться к генератору текстур">
+          ▦ Texture Generator
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Карточка управления алгоритмом нормализации -->
+    <div class="controls-card">
+      <div class="controls-card-header">
+        <div class="card-title">
+          <span>⚙️ Параметры нормализации и контраста</span>
+        </div>
+        <div class="actions-right">
+          <button type="button" class="btn btn-tiny" onclick="loadDemoGrassBlock()" title="Загрузить тестовый пример: блок травы (Верх, Бок с землей, Низ)">
+            🌱 Загрузить пример (Трава + Земля)
+          </button>
+          <button type="button" class="btn btn-tiny" onclick="resetToOriginals()" title="Вернуть исходные текстуры">
+            ↩ Сбросить
+          </button>
+        </div>
+      </div>
+
+      <div class="params-grid">
+        <!-- 1. Снижение контрастности -->
+        <div class="param-box">
+          <div class="param-header">
+            <label for="contrastRange">Снижение контрастности:</label>
+            <span class="param-badge" id="contrastBadge">0%</span>
+          </div>
+          <input 
+            type="range" 
+            id="contrastRange" 
+            min="0" 
+            max="70" 
+            step="5" 
+            value="0" 
+            class="custom-range" 
+            oninput="document.getElementById('contrastBadge').textContent = this.value + '%'"
+          />
+          <div class="param-desc">Сжимает динамический диапазон пикселей, убирая резкие блики и глубокие провалы в тенях</div>
+        </div>
+
+        <!-- 2. Область нормализации (Только общие / земля / все) -->
+        <div class="param-box">
+          <div class="param-header">
+            <label for="colorTargetSelect">Область нормализации:</label>
+          </div>
+          <select id="colorTargetSelect" class="custom-select">
+            <option value="auto_shared" selected>Только похожие / общие цвета (Автоматически)</option>
+            <option value="brown_dirt">Только коричневые тона (Земля / Дерево)</option>
+            <option value="green_grass">Только зеленые тона (Трава / Листва)</option>
+            <option value="stone_gray">Только серые тона (Камень / Минералы)</option>
+            <option value="all_colors">Все цвета (Глобальная гармонизация)</option>
+          </select>
+          <div class="param-desc">Изолирует похожие цвета: например, выравнивает только землю, не затрагивая шапку травы</div>
+        </div>
+
+        <!-- 3. Базовая палитра -->
+        <div class="param-box">
+          <div class="param-header">
+            <label for="paletteBaseSelect">Базовая палитра:</label>
+          </div>
+          <select id="paletteBaseSelect" class="custom-select">
+            <option value="average" selected>Усредненная общая палитра (Гармония)</option>
+            <option value="slot1">По образцу Текстуры 1</option>
+            <option value="slot2">По образцу Текстуры 2</option>
+            <option value="slot3">По образцу Текстуры 3</option>
+          </select>
+          <div class="param-desc">Выбирает источник целевых оттенков для приведения всех текстур к одному стандарту</div>
+        </div>
+      </div>
+
+      <div class="actions-bar">
+        <div class="actions-left">
+          <button id="normalizeBtn" type="button" class="btn btn-primary" onclick="runNormalization()">
+            <span>🪄</span> Нормализовать палитру и контраст
+          </button>
+        </div>
+        <div class="actions-right">
+          <button type="button" class="btn" onclick="downloadAllTextures()" title="Скачать все нормализованные текстуры">
+            💾 Скачать все (3 шт)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Карточка объединения: Встраивание текстур Top (#1) и Bottom (#3) в Side (#2) -->
+    <div class="controls-card merge-card">
+      <div class="controls-card-header">
+        <div class="card-title">
+          <span style="color: #10b981;">🧩</span>
+          <span>Объединение в боковую грань (Встраивание Top и Bottom)</span>
+          <span class="param-badge" style="color: #10b981; background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3);">
+            #1 + #3 ➔ #2
+          </span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-dim);">
+          Встраивает траву верха (#1) и землю низа (#3) в бок (#2) для идеальной согласованности блока
+        </div>
+      </div>
+
+      <div class="params-grid">
+        <!-- 1. Метод объединения -->
+        <div class="param-box">
+          <div class="param-header">
+            <label for="mergeModeSelect">Режим объединения:</label>
+          </div>
+          <select id="mergeModeSelect" class="custom-select" onchange="toggleMergeModeOptions()">
+            <option value="mask" selected>По форме боковой грани (Точные пиксели верха и низа)</option>
+            <option value="procedural">Процедурный нахлест (Органические зубцы травы на землю)</option>
+            <option value="palette">Палитровый перенос (Сохранить рисунок/шум бока)</option>
+          </select>
+          <div class="param-desc" id="mergeModeDesc">
+            Заменяет траву бока пикселями из #1, а землю — пикселями из #3, сохраняя естественные свисающие клинья.
+          </div>
+        </div>
+
+        <!-- 2. Высота нахлеста травы (для процедурного режима / порога) -->
+        <div class="param-box" id="overhangBox">
+          <div class="param-header">
+            <label for="overhangDepthRange">Высота нахлеста травы:</label>
+            <span class="param-badge" id="overhangBadge">4 px</span>
+          </div>
+          <input 
+            type="range" 
+            id="overhangDepthRange" 
+            min="2" 
+            max="8" 
+            step="1" 
+            value="4" 
+            class="custom-range" 
+            oninput="document.getElementById('overhangBadge').textContent = this.value + ' px'"
+          />
+          <div class="param-desc">Базовая высота свисающих клиньев травы (для процедурного режима)</div>
+        </div>
+
+        <!-- 3. Дополнительные опции: тень и источник -->
+        <div class="param-box">
+          <div class="param-header">
+            <label>Дополнительные опции:</label>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 2px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="shadowToggle" checked style="accent-color: #10b981; width: 16px; height: 16px; cursor: pointer;">
+              <span>Тень под нависающей травой (Ambient Occlusion)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; color: var(--text);">
+              <input type="checkbox" id="useNormalizedSourcesToggle" checked style="accent-color: #10b981; width: 16px; height: 16px; cursor: pointer;">
+              <span>Использовать нормализованные палитры верха и низа</span>
+            </label>
+          </div>
+          <div class="param-desc">Мягкая тень (-22% яркости) под травой придает воксельному блоку объем</div>
+        </div>
+      </div>
+
+      <div class="actions-bar">
+        <div class="actions-left">
+          <button id="mergeBtn" type="button" class="btn btn-primary" onclick="mergeTopBottomIntoSide()" style="background: linear-gradient(135deg, #10b981 0%, #059669 40%, #6366f1 100%); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">
+            <span>🧩</span> Объединить в боковую грань (#1 и #3 ➔ #2)
+          </button>
+        </div>
+        <div class="actions-right">
+          <span style="font-size: 12px; color: var(--text-dim);">
+            Результат запишется в «После» Слота #2 и сразу обновит 3D-куб
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Сетка слотов 3 текстур -->
+    <div class="slots-grid">
+      <!-- Слот 1 -->
+      <div class="slot-card" id="slotCard1">
+        <div class="slot-header">
+          <div class="slot-title-wrap">
+            <span class="slot-badge">#1</span>
+            <span class="slot-title">Верх блока (Top)</span>
+          </div>
+          <button type="button" class="btn btn-tiny" onclick="downloadSlot(1)" title="Скачать текстуру #1 в PNG">⬇ PNG</button>
+        </div>
+
+        <div class="canvas-duo">
+          <div class="canvas-box">
+            <span class="canvas-box-title">До</span>
+            <div class="pixel-canvas-wrapper">
+              <canvas id="canvasBefore1" width="16" height="16" class="pixel-canvas"></canvas>
+            </div>
+          </div>
+          <div class="canvas-box">
+            <span class="canvas-box-title" style="color: #c084fc;">После</span>
+            <div class="pixel-canvas-wrapper">
+              <canvas id="canvasAfter1" width="16" height="16" class="pixel-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <label class="upload-zone" title="Загрузить свою текстуру 16х16">
+          <span>📁 Загрузить файл (PNG 16×16)</span>
+          <input type="file" accept="image/*" style="display: none;" onchange="handleFileUpload(1, this)">
+        </label>
+
+        <div>
+          <span style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">Палитра:</span>
+          <div class="palette-swatches-strip" id="paletteStrip1"></div>
+        </div>
+      </div>
+
+      <!-- Слот 2 -->
+      <div class="slot-card" id="slotCard2">
+        <div class="slot-header">
+          <div class="slot-title-wrap">
+            <span class="slot-badge">#2</span>
+            <span class="slot-title">Бок блока (Side)</span>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" class="btn btn-tiny" onclick="mergeTopBottomIntoSide()" title="Быстро встроить верх #1 и низ #3 в эту грань" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+              🧩 Встроить #1 и #3
+            </button>
+            <button type="button" class="btn btn-tiny" onclick="downloadSlot(2)" title="Скачать текстуру #2 в PNG">⬇ PNG</button>
+          </div>
+        </div>
+
+        <div class="canvas-duo">
+          <div class="canvas-box">
+            <span class="canvas-box-title">До</span>
+            <div class="pixel-canvas-wrapper">
+              <canvas id="canvasBefore2" width="16" height="16" class="pixel-canvas"></canvas>
+            </div>
+          </div>
+          <div class="canvas-box">
+            <span class="canvas-box-title" style="color: #c084fc;">После</span>
+            <div class="pixel-canvas-wrapper">
+              <canvas id="canvasAfter2" width="16" height="16" class="pixel-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <label class="upload-zone" title="Загрузить свою текстуру 16х16">
+          <span>📁 Загрузить файл (PNG 16×16)</span>
+          <input type="file" accept="image/*" style="display: none;" onchange="handleFileUpload(2, this)">
+        </label>
+
+        <div>
+          <span style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">Палитра:</span>
+          <div class="palette-swatches-strip" id="paletteStrip2"></div>
+        </div>
+      </div>
+
+      <!-- Слот 3 -->
+      <div class="slot-card" id="slotCard3">
+        <div class="slot-header">
+          <div class="slot-title-wrap">
+            <span class="slot-badge">#3</span>
+            <span class="slot-title">Низ блока (Bottom)</span>
+          </div>
+          <button type="button" class="btn btn-tiny" onclick="downloadSlot(3)" title="Скачать текстуру #3 в PNG">⬇ PNG</button>
+        </div>
+
+        <div class="canvas-duo">
+          <div class="canvas-box">
+            <span class="canvas-box-title">До</span>
+            <div class="pixel-canvas-wrapper">
+              <canvas id="canvasBefore3" width="16" height="16" class="pixel-canvas"></canvas>
+            </div>
+          </div>
+          <div class="canvas-box">
+            <span class="canvas-box-title" style="color: #c084fc;">После</span>
+            <div class="pixel-canvas-wrapper">
+              <canvas id="canvasAfter3" width="16" height="16" class="pixel-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <label class="upload-zone" title="Загрузить свою текстуру 16х16">
+          <span>📁 Загрузить файл (PNG 16×16)</span>
+          <input type="file" accept="image/*" style="display: none;" onchange="handleFileUpload(3, this)">
+        </label>
+
+        <div>
+          <span style="font-size: 11px; color: var(--text-dim); display: block; margin-bottom: 4px;">Палитра:</span>
+          <div class="palette-swatches-strip" id="paletteStrip3"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3D инспектор воксельного блока: До и После -->
+    <div class="cube-section">
+      <div class="cube-section-header">
+        <div class="card-title">
+          <span>🧊 3D Просмотр воксельного блока</span>
+        </div>
+        <div class="cube-controls">
+          <span style="font-size: 11px; color: var(--text-dim); margin-right: 4px;">Ракурс:</span>
+          <button type="button" class="cube-btn active" id="btnAngleIso" onclick="setCubeAngle('iso')" title="Вид сверху и сбоку">📐 Изометрия (Верх + Бок)</button>
+          <button type="button" class="cube-btn" id="btnAngleBottom" onclick="setCubeAngle('bottom')" title="Вид снизу и сбоку">🔄 Низ (Земля + Бок)</button>
+          <button type="button" class="cube-btn" id="btnAngleFront" onclick="setCubeAngle('front')" title="Прямой вид на боковую грань">🟦 Фас (Боковая грань)</button>
+        </div>
+      </div>
+
+      <div class="cube-stage" id="cubeStage" title="Зажмите ЛКМ и двигайте мышь для вращения куба в 3D">
+        <div class="cube-wrapper">
+          <div class="cube-label">ИСХОДНЫЙ БЛОК (ДО)</div>
+          <div class="voxel-cube" id="cubeBefore">
+            <canvas class="cube-face face-top" id="faceBeforeTop" width="16" height="16"></canvas>
+            <canvas class="cube-face face-front" id="faceBeforeFront" width="16" height="16"></canvas>
+            <canvas class="cube-face face-right" id="faceBeforeRight" width="16" height="16"></canvas>
+            <canvas class="cube-face face-bottom" id="faceBeforeBottom" width="16" height="16"></canvas>
+          </div>
+        </div>
+
+        <div class="cube-wrapper">
+          <div class="cube-label" style="color: #c084fc;">ОБЪЕДИНЕННЫЙ БЛОК (ПОСЛЕ)</div>
+          <div class="voxel-cube" id="cubeAfter">
+            <canvas class="cube-face face-top" id="faceAfterTop" width="16" height="16"></canvas>
+            <canvas class="cube-face face-front" id="faceAfterFront" width="16" height="16"></canvas>
+            <canvas class="cube-face face-right" id="faceAfterRight" width="16" height="16"></canvas>
+            <canvas class="cube-face face-bottom" id="faceAfterBottom" width="16" height="16"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="toastNotification" class="toast-notification"></div>
+
+  <script>
+    // Состояние слотов: массивы пикселей 16x16 в виде { r, g, b, a }
+    const texturesOriginal = {
+      1: new Array(256).fill(null),
+      2: new Array(256).fill(null),
+      3: new Array(256).fill(null)
+    };
+
+    const texturesNormalized = {
+      1: new Array(256).fill(null),
+      2: new Array(256).fill(null),
+      3: new Array(256).fill(null)
+    };
+
+    // Вспомогательные цветовые функции
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+
+      if (max === min) {
+        h = s = 0; // achromatic
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return { h: h * 360, s: s * 100, l: l * 100 };
+    }
+
+    function hslToRgb(h, s, l) {
+      h /= 360; s /= 100; l /= 100;
+      let r, g, b;
+
+      if (s === 0) {
+        r = g = b = l; // achromatic
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+      };
+    }
+
+    function colorDist(c1, c2) {
+      // Взвешенное евклидово расстояние по спектру чувствительности человеческого глаза
+      const rmean = (c1.r + c2.r) / 2;
+      const r = c1.r - c2.r;
+      const g = c1.g - c2.g;
+      const b = c1.b - c2.b;
+      return Math.sqrt((((512 + rmean) * r * r) >> 8) + 4 * g * g + (((767 - rmean) * b * b) >> 8));
+    }
+
+    // Генерация красивых демо-текстур (Блок травы)
+    function loadDemoGrassBlock() {
+      // 1. Верх блока (Grass Top): оттенки сочной зеленой травы
+      const greenPal = [
+        { r: 76, g: 125, b: 42, a: 255 },
+        { r: 89, g: 144, b: 48, a: 255 },
+        { r: 104, g: 162, b: 56, a: 255 },
+        { r: 119, g: 178, b: 64, a: 255 },
+        { r: 133, g: 194, b: 72, a: 255 }
+      ];
+
+      // 2. Земля на боковой грани (Dirt on Side) — слегка красновато-коричневая
+      const dirtSidePal = [
+        { r: 115, g: 73, b: 45, a: 255 },
+        { r: 134, g: 85, b: 53, a: 255 },
+        { r: 153, g: 99, b: 63, a: 255 },
+        { r: 171, g: 113, b: 73, a: 255 }
+      ];
+
+      // 3. Земля внизу (Dirt Bottom) — холодная серовато-коричневая (намеренно разный оттенок для теста нормализации!)
+      const dirtBottomPal = [
+        { r: 92, g: 68, b: 52, a: 255 },
+        { r: 108, g: 81, b: 62, a: 255 },
+        { r: 125, g: 94, b: 73, a: 255 },
+        { r: 142, g: 108, b: 84, a: 255 }
+      ];
+
+      // Слот 1: Верх травы
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const idx = (x * 7 + y * 13 + ((x * y) % 5)) % greenPal.length;
+          texturesOriginal[1][y * 16 + x] = { ...greenPal[idx] };
+        }
+      }
+
+      // Слот 2: Бок (сверху трава с висячими клиньями, снизу земля)
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const grassCutoff = 3 + ((x % 2 === 0) ? 1 : 0) + ((x % 4 === 1) ? 1 : 0);
+          if (y <= grassCutoff) {
+            const idx = (x * 3 + y * 5) % greenPal.length;
+            texturesOriginal[2][y * 16 + x] = { ...greenPal[idx] };
+          } else {
+            const idx = (x * 11 + y * 7) % dirtSidePal.length;
+            texturesOriginal[2][y * 16 + x] = { ...dirtSidePal[idx] };
+          }
+        }
+      }
+
+      // Слот 3: Низ (чистая земля)
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const idx = (x * 9 + y * 17) % dirtBottomPal.length;
+          texturesOriginal[3][y * 16 + x] = { ...dirtBottomPal[idx] };
+        }
+      }
+
+      // Копируем в нормализованные и отрисовываем
+      for (let s = 1; s <= 3; s++) {
+        texturesNormalized[s] = texturesOriginal[s].map(p => ({ ...p }));
+      }
+
+      renderAllCanvases();
+      showToast('🌱 Загружен пример блока травы (Верх, Бок, Низ)');
+    }
+
+    // Отрисовка холстов и палитр
+    function renderAllCanvases() {
+      for (let s = 1; s <= 3; s++) {
+        drawPixelArrayToCanvas(`canvasBefore${s}`, texturesOriginal[s]);
+        drawPixelArrayToCanvas(`canvasAfter${s}`, texturesNormalized[s]);
+        renderPaletteStrip(`paletteStrip${s}`, texturesNormalized[s]);
+      }
+      renderCubeFaces();
+    }
+
+    function drawPixelArrayToCanvas(canvasId, pixelArray) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 16, 16);
+
+      const imgData = ctx.createImageData(16, 16);
+      for (let i = 0; i < 256; i++) {
+        const p = pixelArray[i];
+        if (p) {
+          imgData.data[i * 4] = p.r;
+          imgData.data[i * 4 + 1] = p.g;
+          imgData.data[i * 4 + 2] = p.b;
+          imgData.data[i * 4 + 3] = p.a !== undefined ? p.a : 255;
+        } else {
+          imgData.data[i * 4 + 3] = 0;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    function renderPaletteStrip(containerId, pixelArray) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+
+      // Извлекаем уникальные цвета
+      const colorMap = new Map();
+      pixelArray.forEach(p => {
+        if (!p || p.a < 10) return;
+        const key = `${p.r},${p.g},${p.b}`;
+        colorMap.set(key, (colorMap.get(key) || 0) + 1);
+      });
+
+      // Сортируем по яркости
+      const sorted = Array.from(colorMap.keys()).map(k => {
+        const [r, g, b] = k.split(',').map(Number);
+        return { r, g, b, lum: r * 0.299 + g * 0.587 + b * 0.114 };
+      }).sort((a, b) => a.lum - b.lum);
+
+      sorted.slice(0, 10).forEach(c => {
+        const swatch = document.createElement('span');
+        swatch.className = 'strip-swatch';
+        swatch.style.backgroundColor = `rgb(${c.r}, ${c.g}, ${c.b})`;
+        swatch.title = `RGB(${c.r}, ${c.g}, ${c.b})`;
+        container.appendChild(swatch);
+      });
+    }
+
+    function renderCubeFaces() {
+      // Исходный куб (До)
+      copyCanvasTo('canvasBefore1', 'faceBeforeTop');
+      copyCanvasTo('canvasBefore2', 'faceBeforeFront');
+      copyCanvasTo('canvasBefore2', 'faceBeforeRight');
+      copyCanvasTo('canvasBefore3', 'faceBeforeBottom');
+
+      // Нормализованный куб (После)
+      copyCanvasTo('canvasAfter1', 'faceAfterTop');
+      copyCanvasTo('canvasAfter2', 'faceAfterFront');
+      copyCanvasTo('canvasAfter2', 'faceAfterRight');
+      copyCanvasTo('canvasAfter3', 'faceAfterBottom');
+    }
+
+    function copyCanvasTo(srcId, destId) {
+      const src = document.getElementById(srcId);
+      const dest = document.getElementById(destId);
+      if (src && dest) {
+        const dCtx = dest.getContext('2d');
+        dCtx.imageSmoothingEnabled = false;
+        dCtx.clearRect(0, 0, 16, 16);
+        dCtx.drawImage(src, 0, 0);
+      }
+    }
+
+    // Классификатор цветовых групп
+    function getColorCategory(hsl) {
+      if (hsl.s < 14) return 'gray'; // Нейтральные серые
+      if (hsl.h >= 75 && hsl.h <= 165) return 'green'; // Трава, листва
+      if (hsl.h >= 10 && hsl.h < 48 && hsl.l < 65) return 'brown'; // Земля, древесина
+      if (hsl.h >= 48 && hsl.h < 75) return 'yellow'; // Песок
+      return 'other';
+    }
+
+    // Алгоритм нормализации
+    function runNormalization() {
+      const contrastVal = parseInt(document.getElementById('contrastRange').value, 10);
+      const contrastReduction = contrastVal / 100; // 0.0 до 0.7
+      const targetArea = document.getElementById('colorTargetSelect').value;
+      const paletteBase = document.getElementById('paletteBaseSelect').value;
+
+      // 1. Анализируем присутствие категорий в текстурах
+      const textureCategories = { 1: new Set(), 2: new Set(), 3: new Set() };
+      const categoryPixels = {
+        brown: { 1: [], 2: [], 3: [] },
+        green: { 1: [], 2: [], 3: [] },
+        gray: { 1: [], 2: [], 3: [] },
+        other: { 1: [], 2: [], 3: [] }
+      };
+
+      for (let s = 1; s <= 3; s++) {
+        texturesOriginal[s].forEach((p, idx) => {
+          if (!p || p.a < 10) return;
+          const hsl = rgbToHsl(p.r, p.g, p.b);
+          const cat = getColorCategory(hsl);
+          textureCategories[s].add(cat);
+          categoryPixels[cat][s].push({ ...p, idx, hsl });
+        });
+      }
+
+      // Определяем, какие категории подлежат нормализации
+      const categoriesToNormalize = new Set();
+      if (targetArea === 'brown_dirt') {
+        categoriesToNormalize.add('brown');
+      } else if (targetArea === 'green_grass') {
+        categoriesToNormalize.add('green');
+      } else if (targetArea === 'stone_gray') {
+        categoriesToNormalize.add('gray');
+      } else if (targetArea === 'all_colors') {
+        categoriesToNormalize.add('brown');
+        categoriesToNormalize.add('green');
+        categoriesToNormalize.add('gray');
+        categoriesToNormalize.add('other');
+      } else {
+        // 'auto_shared': нормализуем только те категории, которые присутствуют минимум в 2 текстурах!
+        ['brown', 'green', 'gray', 'other'].forEach(cat => {
+          let presentCount = 0;
+          for (let s = 1; s <= 3; s++) {
+            if (categoryPixels[cat][s].length > 0) presentCount++;
+          }
+          if (presentCount >= 2) {
+            categoriesToNormalize.add(cat);
+          }
+        });
+      }
+
+      // Копируем исходные
+      for (let s = 1; s <= 3; s++) {
+        texturesNormalized[s] = texturesOriginal[s].map(p => ({ ...p }));
+      }
+
+      // 2. Для каждой выбранной категории строим целевую унифицированную палитру
+      categoriesToNormalize.forEach(cat => {
+        // Собираем все пиксели этой категории из нужных слотов
+        let basePixels = [];
+        if (paletteBase === 'slot1' && categoryPixels[cat][1].length > 0) {
+          basePixels = categoryPixels[cat][1];
+        } else if (paletteBase === 'slot2' && categoryPixels[cat][2].length > 0) {
+          basePixels = categoryPixels[cat][2];
+        } else if (paletteBase === 'slot3' && categoryPixels[cat][3].length > 0) {
+          basePixels = categoryPixels[cat][3];
+        } else {
+          // Усредненная: берем из всех слотов
+          basePixels = [...categoryPixels[cat][1], ...categoryPixels[cat][2], ...categoryPixels[cat][3]];
+        }
+
+        if (basePixels.length === 0) return;
+
+        // Находим средний тон (Hue, Saturation) и среднюю яркость базовой палитры
+        let avgH = 0, avgS = 0, avgL = 0;
+        basePixels.forEach(p => {
+          avgH += p.hsl.h;
+          avgS += p.hsl.s;
+          avgL += p.hsl.l;
+        });
+        avgH /= basePixels.length;
+        avgS /= basePixels.length;
+        avgL /= basePixels.length;
+
+        // Вычисляем разброс яркостей
+        const minL = Math.min(...basePixels.map(p => p.hsl.l));
+        const maxL = Math.max(...basePixels.map(p => p.hsl.l));
+        const spanL = Math.max(1, maxL - minL);
+
+        // 3. Применяем унификацию и контрастность к пикселям каждого слота в этой категории
+        for (let s = 1; s <= 3; s++) {
+          const pixelsInSlot = categoryPixels[cat][s];
+          if (pixelsInSlot.length === 0) continue;
+
+          pixelsInSlot.forEach(item => {
+            // Выравниваем тон и насыщенность к целевой палитре категории
+            const targetH = avgH;
+            const targetS = avgS;
+
+            // Корректируем яркость (L):
+            // 1. Относительное положение яркости пикселя
+            let curL = item.hsl.l;
+
+            // 2. Уменьшение контрастности (сжатие динамического диапазона к средней яркости)
+            if (contrastReduction > 0) {
+              curL = avgL + (curL - avgL) * (1 - contrastReduction);
+            }
+
+            const newRgb = hslToRgb(targetH, targetS, curL);
+            texturesNormalized[s][item.idx] = {
+              r: newRgb.r,
+              g: newRgb.g,
+              b: newRgb.b,
+              a: item.a
+            };
+          });
+        }
+      });
+
+      // Также, если включено уменьшение контрастности для остальных пикселей (не входящих в категорию):
+      if (contrastReduction > 0 && targetArea !== 'auto_shared') {
+        for (let s = 1; s <= 3; s++) {
+          texturesNormalized[s].forEach((p, idx) => {
+            if (!p || p.a < 10) return;
+            const hsl = rgbToHsl(p.r, p.g, p.b);
+            const cat = getColorCategory(hsl);
+            if (!categoriesToNormalize.has(cat)) {
+              // Применяем мягкое сжатие контраста
+              const newL = 50 + (hsl.l - 50) * (1 - contrastReduction);
+              const rgb = hslToRgb(hsl.h, hsl.s, newL);
+              texturesNormalized[s][idx] = { r: rgb.r, g: rgb.g, b: rgb.b, a: p.a };
+            }
+          });
+        }
+      }
+
+      renderAllCanvases();
+      showToast('✨ Текстуры успешно нормализованы!');
+    }
+
+    function resetToOriginals() {
+      for (let s = 1; s <= 3; s++) {
+        texturesNormalized[s] = texturesOriginal[s].map(p => ({ ...p }));
+      }
+      document.getElementById('contrastRange').value = 0;
+      document.getElementById('contrastBadge').textContent = '0%';
+      renderAllCanvases();
+      showToast('↩ Исходные текстуры восстановлены');
+    }
+
+    // Загрузка пользовательского изображения в слот
+    function handleFileUpload(slotNum, input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const temp = document.createElement('canvas');
+          temp.width = 16;
+          temp.height = 16;
+          const tCtx = temp.getContext('2d');
+          tCtx.imageSmoothingEnabled = false;
+          tCtx.drawImage(img, 0, 0, 16, 16);
+          const data = tCtx.getImageData(0, 0, 16, 16).data;
+
+          for (let i = 0; i < 256; i++) {
+            const a = data[i * 4 + 3];
+            if (a < 10) {
+              texturesOriginal[slotNum][i] = null;
+              texturesNormalized[slotNum][i] = null;
+            } else {
+              const p = {
+                r: data[i * 4],
+                g: data[i * 4 + 1],
+                b: data[i * 4 + 2],
+                a: a
+              };
+              texturesOriginal[slotNum][i] = p;
+              texturesNormalized[slotNum][i] = { ...p };
+            }
+          }
+          renderAllCanvases();
+          showToast(`📁 Текстура #${slotNum} загружена (${file.name})`);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    }
+
+    // Скачивание отдельного слота
+    function downloadSlot(slotNum) {
+      const canvas = document.getElementById(`canvasAfter${slotNum}`);
+      if (!canvas) return;
+      const link = document.createElement('a');
+      link.download = `normalized_texture_${slotNum}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast(`💾 Текстура #${slotNum} скачана`);
+    }
+
+    // Скачивание всех слотов
+    function downloadAllTextures() {
+      for (let s = 1; s <= 3; s++) {
+        setTimeout(() => downloadSlot(s), (s - 1) * 200);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // --- Функционал «Объединение» (Embedding Top & Bottom into Side) ---
+
+    function toggleMergeModeOptions() {
+      const mode = document.getElementById('mergeModeSelect').value;
+      const desc = document.getElementById('mergeModeDesc');
+      const box = document.getElementById('overhangBox');
+
+      if (mode === 'procedural') {
+        if (desc) desc.textContent = 'Накладывает верхнюю траву зубцами/клиньями поверх земли с заданной высотой.';
+        if (box) box.style.opacity = '1';
+      } else if (mode === 'palette') {
+        if (desc) desc.textContent = 'Сохраняет микрорельеф и тени боковой грани, перекрашивая траву в палитру #1, а землю — в палитру #3.';
+        if (box) box.style.opacity = '0.4';
+      } else {
+        // mask
+        if (desc) desc.textContent = 'Заменяет траву бока пикселями из #1, а землю — пикселями из #3, сохраняя естественные свисающие клинья.';
+        if (box) box.style.opacity = '1';
+      }
+    }
+
+    function mergeTopBottomIntoSide() {
+      const useNorm = document.getElementById('useNormalizedSourcesToggle') ? document.getElementById('useNormalizedSourcesToggle').checked : true;
+      const topSource = useNorm ? texturesNormalized[1] : texturesOriginal[1];
+      const sideSource = texturesOriginal[2];
+      const bottomSource = useNorm ? texturesNormalized[3] : texturesOriginal[3];
+
+      const hasTop = topSource && topSource.some(p => p !== null);
+      const hasBottom = bottomSource && bottomSource.some(p => p !== null);
+      const hasSide = sideSource && sideSource.some(p => p !== null);
+
+      if (!hasTop || !hasBottom) {
+        showToast('⚠️ Для объединения требуются текстуры верха (#1) и низа (#3)!');
+        return;
+      }
+
+      const mode = document.getElementById('mergeModeSelect').value;
+      const baseOverhang = parseInt(document.getElementById('overhangDepthRange').value, 10) || 4;
+      const shadowEnabled = document.getElementById('shadowToggle').checked;
+
+      const merged = new Array(256).fill(null);
+
+      // Извлекаем цвета верха и низа
+      const topColors = [];
+      const bottomColors = [];
+      for (let i = 0; i < 256; i++) {
+        const pt = topSource[i];
+        if (pt && pt.a > 10) topColors.push(pt);
+        const pb = bottomSource[i];
+        if (pb && pb.a > 10) bottomColors.push(pb);
+      }
+
+      // Сетка принадлежности: true = трава/верх, false = земля/низ
+      const isGrassGrid = [];
+      for (let x = 0; x < 16; x++) {
+        isGrassGrid[x] = [];
+      }
+
+      if (mode === 'procedural' || !hasSide) {
+        // Процедурный нахлест: генерация органических зубцов/клиньев травы
+        const offsets = [0, 1, 0, -1, 1, 2, 0, -1, 0, 1, 2, 1, 0, -1, 0, 1];
+        for (let x = 0; x < 16; x++) {
+          const cutoff = Math.max(1, Math.min(14, baseOverhang + offsets[x]));
+          for (let y = 0; y < 16; y++) {
+            isGrassGrid[x][y] = (y <= cutoff);
+          }
+        }
+      } else {
+        // Режим по форме боковой грани: распознаем контуры существующей травы
+        for (let x = 0; x < 16; x++) {
+          for (let y = 0; y < 16; y++) {
+            const p = sideSource[y * 16 + x];
+            if (!p || p.a < 10) {
+              isGrassGrid[x][y] = (y <= baseOverhang);
+              continue;
+            }
+
+            // Находим минимальное расстояние до палитры верха и низа
+            let minDistTop = Infinity;
+            for (let i = 0; i < topColors.length; i += 3) {
+              const d = colorDist(p, topColors[i]);
+              if (d < minDistTop) minDistTop = d;
+            }
+
+            let minDistBottom = Infinity;
+            for (let i = 0; i < bottomColors.length; i += 3) {
+              const d = colorDist(p, bottomColors[i]);
+              if (d < minDistBottom) minDistBottom = d;
+            }
+
+            // Учитываем вертикальную координату (трава сверху, земля снизу)
+            const yWeight = (y - 6.5) * 12;
+            isGrassGrid[x][y] = (minDistTop - minDistBottom + yWeight) < 0;
+          }
+        }
+      }
+
+      // Применяем объединение
+      if (mode === 'palette') {
+        // Перенос палитры с сохранением светотеневого рисунка бока
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const idx = y * 16 + x;
+            const pSide = sideSource[idx];
+            const isGrass = isGrassGrid[x][y];
+            const targetPalette = isGrass ? topColors : bottomColors;
+
+            if (!pSide || targetPalette.length === 0) {
+              merged[idx] = isGrass ? { ...topSource[idx] } : { ...bottomSource[idx] };
+              continue;
+            }
+
+            const pLum = pSide.r * 0.299 + pSide.g * 0.587 + pSide.b * 0.114;
+            let bestMatch = targetPalette[0];
+            let bestDiff = Infinity;
+            for (let i = 0; i < targetPalette.length; i++) {
+              const cand = targetPalette[i];
+              const cLum = cand.r * 0.299 + cand.g * 0.587 + cand.b * 0.114;
+              const diff = Math.abs(cLum - pLum);
+              if (diff < bestDiff) {
+                bestDiff = diff;
+                bestMatch = cand;
+              }
+            }
+
+            let finalPixel = { ...bestMatch };
+            // Тень под нависающей травой
+            if (shadowEnabled && !isGrass && y > 0 && isGrassGrid[x][y - 1]) {
+              finalPixel.r = Math.round(finalPixel.r * 0.78);
+              finalPixel.g = Math.round(finalPixel.g * 0.78);
+              finalPixel.b = Math.round(finalPixel.b * 0.78);
+            }
+            merged[idx] = finalPixel;
+          }
+        }
+      } else {
+        // Прямое встраивание (по форме бока или процедурный нахлест):
+        // Пиксели травы берутся из #1, пиксели земли берутся из #3!
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const idx = y * 16 + x;
+            const isGrass = isGrassGrid[x][y];
+
+            if (isGrass) {
+              const topP = topSource[idx] || { r: 104, g: 162, b: 56, a: 255 };
+              merged[idx] = { ...topP };
+            } else {
+              const bottomP = bottomSource[idx] || { r: 115, g: 85, b: 60, a: 255 };
+              let dirtPixel = { ...bottomP };
+
+              // Затенение под нависающей травой (Ambient Occlusion)
+              if (shadowEnabled && y > 0 && isGrassGrid[x][y - 1]) {
+                dirtPixel.r = Math.round(dirtPixel.r * 0.78);
+                dirtPixel.g = Math.round(dirtPixel.g * 0.78);
+                dirtPixel.b = Math.round(dirtPixel.b * 0.78);
+              }
+              merged[idx] = dirtPixel;
+            }
+          }
+        }
+      }
+
+      // Сохраняем в нормализованную боковую грань (#2)
+      texturesNormalized[2] = merged;
+
+      // Обновляем отображение
+      drawPixelArrayToCanvas('canvasAfter2', texturesNormalized[2]);
+      renderPaletteStrip('paletteStrip2', texturesNormalized[2]);
+      renderCubeFaces();
+
+      showToast('🧩 Текстуры успешно объединены в боковую грань!');
+    }
+
+    // --- Интерактивное управление 3D-кубом (Ракурсы и свободное вращение) ---
+    let cubeRotX = -28;
+    let cubeRotY = 45;
+    let isDraggingCube = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let startRotX = 0;
+    let startRotY = 0;
+
+    function applyCubeRotation() {
+      const b = document.getElementById('cubeBefore');
+      const a = document.getElementById('cubeAfter');
+      if (b) b.style.transform = `rotateX(${cubeRotX}deg) rotateY(${cubeRotY}deg)`;
+      if (a) a.style.transform = `rotateX(${cubeRotX}deg) rotateY(${cubeRotY}deg)`;
+    }
+
+    function setCubeAngle(preset) {
+      document.querySelectorAll('.cube-btn').forEach(btn => btn.classList.remove('active'));
+      if (preset === 'iso') {
+        cubeRotX = -28; cubeRotY = 45;
+        document.getElementById('btnAngleIso')?.classList.add('active');
+      } else if (preset === 'bottom') {
+        cubeRotX = 28; cubeRotY = 45;
+        document.getElementById('btnAngleBottom')?.classList.add('active');
+      } else if (preset === 'front') {
+        cubeRotX = 0; cubeRotY = 0;
+        document.getElementById('btnAngleFront')?.classList.add('active');
+      }
+      applyCubeRotation();
+    }
+
+    function initCubeInteractions() {
+      const stage = document.getElementById('cubeStage');
+      if (!stage) return;
+      stage.style.cursor = 'grab';
+
+      stage.addEventListener('mousedown', (e) => {
+        isDraggingCube = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        startRotX = cubeRotX;
+        startRotY = cubeRotY;
+        stage.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingCube) return;
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        cubeRotY = startRotY + dx * 0.6;
+        cubeRotX = Math.max(-85, Math.min(85, startRotX - dy * 0.6));
+        applyCubeRotation();
+        document.querySelectorAll('.cube-btn').forEach(btn => btn.classList.remove('active'));
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDraggingCube) {
+          isDraggingCube = false;
+          stage.style.cursor = 'grab';
+        }
+      });
+    }
+
+    window.onload = () => {
+      loadDemoGrassBlock();
+      initCubeInteractions();
+    };
+  </script>
+</body>
+</html>
