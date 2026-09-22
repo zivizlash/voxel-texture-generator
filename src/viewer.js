@@ -21,20 +21,28 @@ export function generateViewerHtml({
 
   const categories = {
     granular: {
-      title: 'Сыпучие и пластичные материалы',
+      title: 'Сыпучие материалы',
       desc: 'Высокочастотный зернистый шум, микро-гранулы, мягкие дюнные перепады'
+    },
+    clay: {
+      title: 'Глина и терракота',
+      desc: 'Пластичная осадочная глина, шелковистая гладь и обожженная керамика'
     },
     organic: {
       title: 'Органика и почвы',
       desc: 'Рыхлая земля, прожилки корней, каменистые включения, споры и хвойный опад'
     },
     stone: {
-      title: 'Каменные и магматические породы',
-      desc: 'Угловатые сколы Voronoi, трещины, кварцевые и амфиболовые кристаллы'
+      title: 'Каменные породы, кладка и кирпич',
+      desc: 'Угловатые сколы Voronoi, кладка булыжника, перевязка кирпича, кристаллы'
     },
     layered: {
       title: 'Слоистые и спрессованные породы',
       desc: 'Горизонтальные пласты, волны сланцеватости, теневые швы и ступени'
+    },
+    wood: {
+      title: 'Древесина и конструкции',
+      desc: 'Продольные волокна, годичные кольца на торцах и половицы'
     }
   };
 
@@ -42,7 +50,7 @@ export function generateViewerHtml({
 
   const categorized = {};
   for (const block of allBlocks) {
-    const cat = block.template || 'other';
+    const cat = block.category || block.template || 'other';
     if (!categorized[cat]) categorized[cat] = [];
     categorized[cat].push(block);
   }
@@ -1088,7 +1096,7 @@ export function generateViewerHtml({
         <div class="nav-stats">
           <span class="badge">Сид: <b id="activeSeedBadge">${seed}</b></span>
           <span class="badge">Вариантов: <b id="activeVariantsBadge">5</b></span>
-          <span class="badge" id="atlasCountBadge">🗺️ В атлас: <b id="atlasSelectedCount">80</b></span>
+          <span class="badge" id="atlasCountBadge">🗺️ В атлас: <b id="atlasSelectedCount">${allBlocks.length * 5}</b></span>
           <span class="badge badge-success" id="statusBadge">✓ Готов</span>
         </div>
       </div>
@@ -1137,7 +1145,7 @@ export function generateViewerHtml({
           <button type="button" class="btn btn-tiny" onclick="window.selectAllVariants(true)" title="Выбрать все варианты">✓ Все</button>
           <button type="button" class="btn btn-tiny" onclick="window.selectAllVariants(false)" title="Снять все отметки">✕ Снять</button>
           <button type="button" class="btn btn-tiny" onclick="window.selectFirst64Variants()" title="Выбрать ровно 64 текстуры для сетки 8х8">⭐ 64 шт</button>
-          <button type="button" class="btn btn-tiny" onclick="window.selectOnePerBlock()" title="Выбрать по 1 варианту каждого из 16 материалов">1️⃣ По 1 шт</button>
+          <button type="button" class="btn btn-tiny" onclick="window.selectOnePerBlock()" title="Выбрать по 1 варианту каждого из ${allBlocks.length} материалов">1️⃣ По 1 шт</button>
           
           <button id="openAtlasBtn" type="button" class="btn btn-atlas" onclick="window.openAtlasModal()" title="Сформировать текстурный атлас 8х8 блоков для предпросмотра">
             🗺️ Преобразовать в атлас

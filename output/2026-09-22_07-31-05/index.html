@@ -975,7 +975,7 @@
         <div class="nav-stats">
           <span class="badge">Сид: <b id="activeSeedBadge">1337</b></span>
           <span class="badge">Вариантов: <b id="activeVariantsBadge">5</b></span>
-          <span class="badge" id="atlasCountBadge">🗺️ В атлас: <b id="atlasSelectedCount">110</b></span>
+          <span class="badge" id="atlasCountBadge">🗺️ В атлас: <b id="atlasSelectedCount">105</b></span>
           <span class="badge badge-success" id="statusBadge">✓ Готов</span>
         </div>
       </div>
@@ -1024,7 +1024,7 @@
           <button type="button" class="btn btn-tiny" onclick="window.selectAllVariants(true)" title="Выбрать все варианты">✓ Все</button>
           <button type="button" class="btn btn-tiny" onclick="window.selectAllVariants(false)" title="Снять все отметки">✕ Снять</button>
           <button type="button" class="btn btn-tiny" onclick="window.selectFirst64Variants()" title="Выбрать ровно 64 текстуры для сетки 8х8">⭐ 64 шт</button>
-          <button type="button" class="btn btn-tiny" onclick="window.selectOnePerBlock()" title="Выбрать по 1 варианту каждого из 22 материалов">1️⃣ По 1 шт</button>
+          <button type="button" class="btn btn-tiny" onclick="window.selectOnePerBlock()" title="Выбрать по 1 варианту каждого из 21 материалов">1️⃣ По 1 шт</button>
           
           <button id="openAtlasBtn" type="button" class="btn btn-atlas" onclick="window.openAtlasModal()" title="Сформировать текстурный атлас 8х8 блоков для предпросмотра">
             🗺️ Преобразовать в атлас
@@ -1112,10 +1112,10 @@
       <section class="category-section" id="cat_granular">
         <div class="category-header">
           <div>
-            <h2>Сыпучие материалы</h2>
+            <h2>Сыпучие и пластичные материалы</h2>
             <p class="category-desc">Высокочастотный зернистый шум, микро-гранулы, мягкие дюнные перепады</p>
           </div>
-          <span class="category-count">3 материалов</span>
+          <span class="category-count">4 материалов</span>
         </div>
         <div class="cards-grid">
           
@@ -1310,32 +1310,19 @@
           </div>
         </div>
       
-        </div>
-      </section>
-    
 
-      <section class="category-section" id="cat_clay">
-        <div class="category-header">
-          <div>
-            <h2>Глина и терракота</h2>
-            <p class="category-desc">Пластичная осадочная глина, шелковистая гладь и обожженная керамика</p>
-          </div>
-          <span class="category-count">2 материалов</span>
-        </div>
-        <div class="cards-grid">
-          
         <div class="block-card" id="card_clay">
           <div class="card-header">
             <div class="card-title-group">
               <div class="title-row">
                 <h3>Глина</h3>
-                <span class="category-tag">clay</span>
+                <span class="category-tag">granular</span>
               </div>
               <code class="block-id">clay</code>
             </div>
             <div class="card-actions">
               <div class="palette-bar" title="Палитра материала (от тени к блику)">
-                <span class="swatch" style="background: rgb(107,115,130)" title="RGB(107, 115, 130)"></span><span class="swatch" style="background: rgb(124,132,148)" title="RGB(124, 132, 148)"></span><span class="swatch" style="background: rgb(141,150,166)" title="RGB(141, 150, 166)"></span><span class="swatch" style="background: rgb(158,168,184)" title="RGB(158, 168, 184)"></span><span class="swatch" style="background: rgb(175,185,201)" title="RGB(175, 185, 201)"></span><span class="swatch" style="background: rgb(194,204,219)" title="RGB(194, 204, 219)"></span>
+                <span class="swatch" style="background: rgb(127,136,151)" title="RGB(127, 136, 151)"></span><span class="swatch" style="background: rgb(141,150,165)" title="RGB(141, 150, 165)"></span><span class="swatch" style="background: rgb(153,163,178)" title="RGB(153, 163, 178)"></span><span class="swatch" style="background: rgb(165,176,191)" title="RGB(165, 176, 191)"></span><span class="swatch" style="background: rgb(178,188,203)" title="RGB(178, 188, 203)"></span><span class="swatch" style="background: rgb(194,202,214)" title="RGB(194, 202, 214)"></span>
               </div>
               <button class="icon-btn" onclick="window.downloadBlockVariants('clay')" title="Скачать все варианты этого блока (.png)">
                 ⬇
@@ -1382,70 +1369,6 @@
               <span class="v-label">#5</span>
             </div>
             <img class="pixel-art" id="varImg_clay_5" src="textures/clay_var5.png" alt="Глина #5" onerror="this.onerror=null;">
-          </div>
-        
-          </div>
-        </div>
-      
-
-        <div class="block-card" id="card_terracotta">
-          <div class="card-header">
-            <div class="card-title-group">
-              <div class="title-row">
-                <h3>Терракота</h3>
-                <span class="category-tag">terracotta</span>
-              </div>
-              <code class="block-id">terracotta</code>
-            </div>
-            <div class="card-actions">
-              <div class="palette-bar" title="Палитра материала (от тени к блику)">
-                <span class="swatch" style="background: rgb(122,55,38)" title="RGB(122, 55, 38)"></span><span class="swatch" style="background: rgb(142,67,47)" title="RGB(142, 67, 47)"></span><span class="swatch" style="background: rgb(163,80,57)" title="RGB(163, 80, 57)"></span><span class="swatch" style="background: rgb(184,94,69)" title="RGB(184, 94, 69)"></span><span class="swatch" style="background: rgb(203,109,82)" title="RGB(203, 109, 82)"></span><span class="swatch" style="background: rgb(220,125,98)" title="RGB(220, 125, 98)"></span>
-              </div>
-              <button class="icon-btn" onclick="window.downloadBlockVariants('terracotta')" title="Скачать все варианты этого блока (.png)">
-                ⬇
-              </button>
-            </div>
-          </div>
-          <div class="variants-row" id="variantsRow_terracotta">
-            
-          <div class="variant-item" id="varItem_terracotta_1" onclick="window.inspectTileByKey('terracotta', 1)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_terracotta_1" data-block-id="terracotta" data-var="1" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#1</span>
-            </div>
-            <img class="pixel-art" id="varImg_terracotta_1" src="textures/terracotta_var1.png" alt="Терракота #1" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_terracotta_2" onclick="window.inspectTileByKey('terracotta', 2)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_terracotta_2" data-block-id="terracotta" data-var="2" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#2</span>
-            </div>
-            <img class="pixel-art" id="varImg_terracotta_2" src="textures/terracotta_var2.png" alt="Терракота #2" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_terracotta_3" onclick="window.inspectTileByKey('terracotta', 3)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_terracotta_3" data-block-id="terracotta" data-var="3" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#3</span>
-            </div>
-            <img class="pixel-art" id="varImg_terracotta_3" src="textures/terracotta_var3.png" alt="Терракота #3" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_terracotta_4" onclick="window.inspectTileByKey('terracotta', 4)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_terracotta_4" data-block-id="terracotta" data-var="4" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#4</span>
-            </div>
-            <img class="pixel-art" id="varImg_terracotta_4" src="textures/terracotta_var4.png" alt="Терракота #4" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_terracotta_5" onclick="window.inspectTileByKey('terracotta', 5)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_terracotta_5" data-block-id="terracotta" data-var="5" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#5</span>
-            </div>
-            <img class="pixel-art" id="varImg_terracotta_5" src="textures/terracotta_var5.png" alt="Терракота #5" onerror="this.onerror=null;">
           </div>
         
           </div>
@@ -1791,10 +1714,10 @@
       <section class="category-section" id="cat_stone">
         <div class="category-header">
           <div>
-            <h2>Каменные породы, кладка и кирпич</h2>
-            <p class="category-desc">Угловатые сколы Voronoi, кладка булыжника, перевязка кирпича, кристаллы</p>
+            <h2>Каменные и магматические породы</h2>
+            <p class="category-desc">Угловатые сколы Voronoi, кладка булыжника, кварцевые и амфиболовые кристаллы</p>
           </div>
-          <span class="category-count">6 материалов</span>
+          <span class="category-count">5 материалов</span>
         </div>
         <div class="cards-grid">
           
@@ -2112,70 +2035,6 @@
               <span class="v-label">#5</span>
             </div>
             <img class="pixel-art" id="varImg_cobblestone_5" src="textures/cobblestone_var5.png" alt="Булыжник #5" onerror="this.onerror=null;">
-          </div>
-        
-          </div>
-        </div>
-      
-
-        <div class="block-card" id="card_bricks">
-          <div class="card-header">
-            <div class="card-title-group">
-              <div class="title-row">
-                <h3>Кирпич</h3>
-                <span class="category-tag">brick</span>
-              </div>
-              <code class="block-id">bricks</code>
-            </div>
-            <div class="card-actions">
-              <div class="palette-bar" title="Палитра материала (от тени к блику)">
-                <span class="swatch" style="background: rgb(109,40,30)" title="RGB(109, 40, 30)"></span><span class="swatch" style="background: rgb(130,51,38)" title="RGB(130, 51, 38)"></span><span class="swatch" style="background: rgb(153,63,47)" title="RGB(153, 63, 47)"></span><span class="swatch" style="background: rgb(175,78,59)" title="RGB(175, 78, 59)"></span><span class="swatch" style="background: rgb(196,95,73)" title="RGB(196, 95, 73)"></span><span class="swatch" style="background: rgb(216,115,92)" title="RGB(216, 115, 92)"></span>
-              </div>
-              <button class="icon-btn" onclick="window.downloadBlockVariants('bricks')" title="Скачать все варианты этого блока (.png)">
-                ⬇
-              </button>
-            </div>
-          </div>
-          <div class="variants-row" id="variantsRow_bricks">
-            
-          <div class="variant-item" id="varItem_bricks_1" onclick="window.inspectTileByKey('bricks', 1)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_bricks_1" data-block-id="bricks" data-var="1" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#1</span>
-            </div>
-            <img class="pixel-art" id="varImg_bricks_1" src="textures/bricks_var1.png" alt="Кирпич #1" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_bricks_2" onclick="window.inspectTileByKey('bricks', 2)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_bricks_2" data-block-id="bricks" data-var="2" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#2</span>
-            </div>
-            <img class="pixel-art" id="varImg_bricks_2" src="textures/bricks_var2.png" alt="Кирпич #2" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_bricks_3" onclick="window.inspectTileByKey('bricks', 3)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_bricks_3" data-block-id="bricks" data-var="3" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#3</span>
-            </div>
-            <img class="pixel-art" id="varImg_bricks_3" src="textures/bricks_var3.png" alt="Кирпич #3" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_bricks_4" onclick="window.inspectTileByKey('bricks', 4)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_bricks_4" data-block-id="bricks" data-var="4" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#4</span>
-            </div>
-            <img class="pixel-art" id="varImg_bricks_4" src="textures/bricks_var4.png" alt="Кирпич #4" onerror="this.onerror=null;">
-          </div>
-        
-          <div class="variant-item" id="varItem_bricks_5" onclick="window.inspectTileByKey('bricks', 5)">
-            <div class="variant-top-bar" onclick="event.stopPropagation()">
-              <input type="checkbox" class="variant-checkbox" id="chk_bricks_5" data-block-id="bricks" data-var="5" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
-              <span class="v-label">#5</span>
-            </div>
-            <img class="pixel-art" id="varImg_bricks_5" src="textures/bricks_var5.png" alt="Кирпич #5" onerror="this.onerror=null;">
           </div>
         
           </div>
@@ -2594,6 +2453,83 @@
         </div>
       </section>
     
+
+      <section class="category-section" id="cat_liquid">
+        <div class="category-header">
+          <div>
+            <h2>Жидкости и флюиды</h2>
+            <p class="category-desc">Текучая вода, каустические блики и гидродинамические волны</p>
+          </div>
+          <span class="category-count">1 материалов</span>
+        </div>
+        <div class="cards-grid">
+          
+        <div class="block-card" id="card_water">
+          <div class="card-header">
+            <div class="card-title-group">
+              <div class="title-row">
+                <h3>Вода</h3>
+                <span class="category-tag">liquid</span>
+              </div>
+              <code class="block-id">water</code>
+            </div>
+            <div class="card-actions">
+              <div class="palette-bar" title="Палитра материала (от тени к блику)">
+                <span class="swatch" style="background: rgb(14,48,94)" title="RGB(14, 48, 94)"></span><span class="swatch" style="background: rgb(22,72,135)" title="RGB(22, 72, 135)"></span><span class="swatch" style="background: rgb(34,100,179)" title="RGB(34, 100, 179)"></span><span class="swatch" style="background: rgb(50,132,216)" title="RGB(50, 132, 216)"></span><span class="swatch" style="background: rgb(82,166,246)" title="RGB(82, 166, 246)"></span><span class="swatch" style="background: rgb(137,200,255)" title="RGB(137, 200, 255)"></span>
+              </div>
+              <button class="icon-btn" onclick="window.downloadBlockVariants('water')" title="Скачать все варианты этого блока (.png)">
+                ⬇
+              </button>
+            </div>
+          </div>
+          <div class="variants-row" id="variantsRow_water">
+            
+          <div class="variant-item" id="varItem_water_1" onclick="window.inspectTileByKey('water', 1)">
+            <div class="variant-top-bar" onclick="event.stopPropagation()">
+              <input type="checkbox" class="variant-checkbox" id="chk_water_1" data-block-id="water" data-var="1" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
+              <span class="v-label">#1</span>
+            </div>
+            <img class="pixel-art" id="varImg_water_1" src="textures/water_var1.png" alt="Вода #1" onerror="this.onerror=null;">
+          </div>
+        
+          <div class="variant-item" id="varItem_water_2" onclick="window.inspectTileByKey('water', 2)">
+            <div class="variant-top-bar" onclick="event.stopPropagation()">
+              <input type="checkbox" class="variant-checkbox" id="chk_water_2" data-block-id="water" data-var="2" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
+              <span class="v-label">#2</span>
+            </div>
+            <img class="pixel-art" id="varImg_water_2" src="textures/water_var2.png" alt="Вода #2" onerror="this.onerror=null;">
+          </div>
+        
+          <div class="variant-item" id="varItem_water_3" onclick="window.inspectTileByKey('water', 3)">
+            <div class="variant-top-bar" onclick="event.stopPropagation()">
+              <input type="checkbox" class="variant-checkbox" id="chk_water_3" data-block-id="water" data-var="3" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
+              <span class="v-label">#3</span>
+            </div>
+            <img class="pixel-art" id="varImg_water_3" src="textures/water_var3.png" alt="Вода #3" onerror="this.onerror=null;">
+          </div>
+        
+          <div class="variant-item" id="varItem_water_4" onclick="window.inspectTileByKey('water', 4)">
+            <div class="variant-top-bar" onclick="event.stopPropagation()">
+              <input type="checkbox" class="variant-checkbox" id="chk_water_4" data-block-id="water" data-var="4" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
+              <span class="v-label">#4</span>
+            </div>
+            <img class="pixel-art" id="varImg_water_4" src="textures/water_var4.png" alt="Вода #4" onerror="this.onerror=null;">
+          </div>
+        
+          <div class="variant-item" id="varItem_water_5" onclick="window.inspectTileByKey('water', 5)">
+            <div class="variant-top-bar" onclick="event.stopPropagation()">
+              <input type="checkbox" class="variant-checkbox" id="chk_water_5" data-block-id="water" data-var="5" checked onchange="window.updateAtlasCounter()" title="Включить этот вариант в текстурный атлас">
+              <span class="v-label">#5</span>
+            </div>
+            <img class="pixel-art" id="varImg_water_5" src="textures/water_var5.png" alt="Вода #5" onerror="this.onerror=null;">
+          </div>
+        
+          </div>
+        </div>
+      
+        </div>
+      </section>
+    
   </main>
 
   <!-- Модальное окно 1: Инспектор тайлинга 3x3 -->
@@ -2963,18 +2899,8 @@
     clay: {
       id: 'clay',
       nameRu: 'Глина',
-      category: 'clay',
-      template: 'clay',
-      palette: parsePalette(['#6b7382', '#7c8494', '#8d96a6', '#9ea8b8', '#afb9c9', '#c2ccdb']),
-      accentPalette: parsePalette(['#565e6c', '#d7e0ed'])
-    },
-    terracotta: {
-      id: 'terracotta',
-      nameRu: 'Терракота',
-      category: 'clay',
-      template: 'terracotta',
-      palette: parsePalette(['#7a3726', '#8e432f', '#a35039', '#b85e45', '#cb6d52', '#dc7d62']),
-      accentPalette: parsePalette(['#572418', '#ec9379'])
+      template: 'granular',
+      palette: parsePalette(['#7f8897', '#8d96a5', '#99a3b2', '#a5b0bf', '#b2bccb', '#c2cad6'])
     },
     mud: {
       id: 'mud',
@@ -3064,14 +2990,6 @@
       palette: parsePalette(['#37373a', '#49494d', '#5c5c61', '#717177', '#86868d', '#9d9da5']),
       accentPalette: parsePalette(['#262628', '#afafb8'])
     },
-    bricks: {
-      id: 'bricks',
-      nameRu: 'Кирпич',
-      category: 'stone',
-      template: 'brick',
-      palette: parsePalette(['#6d281e', '#823326', '#993f2f', '#af4e3b', '#c45f49', '#d8735c']),
-      accentPalette: parsePalette(['#3a2824', '#7b6a65'])
-    },
     planks: {
       id: 'planks',
       nameRu: 'Доски',
@@ -3095,6 +3013,14 @@
       template: 'wood_log_top',
       palette: parsePalette(['#795e3c', '#907148', '#a78456', '#bd9764', '#d2ab74', '#e5be85']),
       accentPalette: parsePalette(['#38291a', '#493724', '#251a10'])
+    },
+    water: {
+      id: 'water',
+      nameRu: 'Вода',
+      category: 'liquid',
+      template: 'liquid',
+      palette: parsePalette(['#0e305e', '#164887', '#2264b3', '#3284d8', '#52a6f6', '#89c8ff']),
+      accentPalette: parsePalette(['#cbe8ff', '#092142'])
     }
   };
 
@@ -3627,7 +3553,7 @@
     return pixels;
   }
 
-  function generateBrick(blockDef, prng, w = 16, h = 16, params = {}) {
+  function generateWater(blockDef, prng, w = 16, h = 16, params = {}) {
     const {
       octaves = 3,
       warpStrength = 0.5,
@@ -3637,108 +3563,26 @@
     } = params;
 
     const warp = new ToroidalDomainWarp(prng);
-    const fbm = new ToroidalFBM(prng, Math.min(3, octaves), 4, 0.5);
-    const heightMap = createGrid(w, h);
-
-    const brickShifts = [];
-    for (let b = 0; b < 8; b++) {
-      brickShifts.push(prng.range(-0.16, 0.16));
-    }
-
-    const isMortarMap = [];
-    for (let y = 0; y < h; y++) {
-      isMortarMap.push(new Uint8Array(w));
-    }
-
-    for (let y = 0; y < h; y++) {
-      const row = Math.floor(y / 4);
-      const localY = y % 4;
-      const isMortarH = (localY === 3);
-      const colShift = (row % 2 === 1) ? 4 : 0;
-
-      for (let x = 0; x < w; x++) {
-        const shiftedX = (x - colShift + w) % w;
-        const localX = shiftedX % 8;
-        const isMortarV = (localX === 7);
-
-        const isMortar = isMortarH || isMortarV;
-        isMortarMap[y][x] = isMortar ? 1 : 0;
-
-        if (isMortar) {
-          const mortarGrain = prng.range(-0.06, 0.06);
-          heightMap[y][x] = 0.12 + mortarGrain;
-        } else {
-          const brickCol = Math.floor(shiftedX / 8);
-          const brickIdx = (row * 2 + brickCol) % 8;
-          const brickShift = brickShifts[brickIdx];
-
-          const warped = warp.warp(x * scale, y * scale, warpStrength * 0.25, 16);
-          const surfaceNoise = (fbm.sample(warped.x, warped.y, 16) - 0.5) * 0.25;
-          const grain = prng.range(-0.08, 0.08);
-
-          let bevel = 0;
-          if (localY === 0) bevel += 0.22;
-          if (localX === 0) bevel += 0.18;
-          if (localY === 2) bevel -= 0.14;
-          if (localX === 6) bevel -= 0.14;
-
-          heightMap[y][x] = 0.62 + brickShift + bevel + surfaceNoise + grain;
-        }
-      }
-    }
-
-    const litMap = applyDirectionalLighting(heightMap, 0.35 * lightStrength, w, h);
-
-    const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
-      w,
-      h,
-      prng,
-      pixelJitter: 0.08 * ditherStrength,
-      ditherStrength: 0.10 * ditherStrength,
-      contrast: 1.15
-    });
-
-    if (blockDef.accentPalette && blockDef.accentPalette.length > 0) {
-      const mortarBase = blockDef.accentPalette[0];
-      const mortarLight = blockDef.accentPalette[1] || mortarBase;
-
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (isMortarMap[y][x]) {
-            const isFleck = prng.chance(0.25);
-            pixels[y][x] = { ...(isFleck ? mortarLight : mortarBase) };
-          }
-        }
-      }
-    }
-
-    return pixels;
-  }
-
-  function generateClay(blockDef, prng, w = 16, h = 16, params = {}) {
-    const {
-      octaves = 3,
-      warpStrength = 0.5,
-      scale = 1.0,
-      ditherStrength = 1.0,
-      lightStrength = 1.0
-    } = params;
-
-    const warp = new ToroidalDomainWarp(prng);
-    const fbm = new ToroidalFBM(prng, octaves, 2, 0.5);
+    const fbm1 = new ToroidalFBM(prng, octaves, 4, 0.5);
+    const fbm2 = new ToroidalFBM(prng.fork(439), Math.max(2, octaves), 2, 0.5);
     const heightMap = createGrid(w, h);
 
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
-        const warped = warp.warp(x * scale, y * scale, warpStrength * 0.7, 16);
-        const smoothWave = fbm.sample(warped.x, warped.y, 16);
-        const fineGrain = prng.range(-0.10, 0.10);
+        const warped = warp.warp(x * scale, y * scale, warpStrength * 1.2, 16);
 
-        heightMap[y][x] = smoothWave * 0.7 + fineGrain * 0.3 + 0.5;
+        const wave1 = fbm1.sample(warped.x, warped.y, 16);
+        const wave2 = fbm2.sample((warped.x + 4) % 16, (warped.y + 7) % 16, 16);
+
+        const causticRidge = 1.0 - Math.abs(wave1 - wave2) * 2.2;
+        const smoothSurface = (wave1 + wave2) * 0.5;
+
+        const combined = smoothSurface * 0.6 + Math.max(0, causticRidge) * 0.4;
+        heightMap[y][x] = combined;
       }
     }
 
-    const litMap = applyDirectionalLighting(heightMap, 0.20 * lightStrength, w, h);
+    const litMap = applyDirectionalLighting(heightMap, 0.22 * lightStrength, w, h);
 
     return normalizeAndMapToPalette(litMap, blockDef.palette, {
       w,
@@ -3746,57 +3590,8 @@
       prng,
       pixelJitter: 0.05 * ditherStrength,
       ditherStrength: 0.08 * ditherStrength,
-      contrast: 1.02
+      contrast: 1.10
     });
-  }
-
-  function generateTerracotta(blockDef, prng, w = 16, h = 16, params = {}) {
-    const {
-      octaves = 3,
-      warpStrength = 0.5,
-      scale = 1.0,
-      ditherStrength = 1.0,
-      lightStrength = 1.0
-    } = params;
-
-    const warp = new ToroidalDomainWarp(prng);
-    const fbm = new ToroidalFBM(prng, octaves, 3, 0.5);
-    const heightMap = createGrid(w, h);
-
-    for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) {
-        const warped = warp.warp(x * scale * 0.9, y * scale * 1.3, warpStrength * 0.6, 16);
-        const macro = fbm.sample(warped.x, warped.y, 16);
-        const pugWave = Math.sin((warped.y / 16) * Math.PI * 4) * 0.12;
-        const fineDust = prng.range(-0.14, 0.14);
-
-        heightMap[y][x] = macro * 0.6 + pugWave + fineDust * 0.28 + 0.5;
-      }
-    }
-
-    const litMap = applyDirectionalLighting(heightMap, 0.25 * lightStrength, w, h);
-
-    const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
-      w,
-      h,
-      prng,
-      pixelJitter: 0.08 * ditherStrength,
-      ditherStrength: 0.12 * ditherStrength,
-      contrast: 1.06
-    });
-
-    if (blockDef.accentPalette && blockDef.accentPalette.length > 0) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          if (prng.chance(0.025)) {
-            const fleck = prng.choice(blockDef.accentPalette);
-            pixels[y][x] = { ...fleck };
-          }
-        }
-      }
-    }
-
-    return pixels;
   }
 
   const TEMPLATE_GENERATORS = {
@@ -3805,12 +3600,10 @@
     stone: generateStone,
     layered: generateLayered,
     cobblestone: generateCobblestone,
-    brick: generateBrick,
-    clay: generateClay,
-    terracotta: generateTerracotta,
     wood_planks: generateWoodPlanks,
     wood_log_side: generateLogSide,
-    wood_log_top: generateLogTop
+    wood_log_top: generateLogTop,
+    liquid: generateWater
   };
 
   // --- 6. Browser Canvas Renderer ---

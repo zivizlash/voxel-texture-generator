@@ -66,18 +66,44 @@ export const BLOCKS = {
     ])
   },
 
+  // --- ГЛИНА И ТЕРРАКОТА ---
   clay: {
     id: 'clay',
     nameRu: 'Глина',
-    template: 'granular',
-    // Мягкий серо-голубоватый влажный оттенок
+    category: 'clay',
+    template: 'clay',
+    // Мягкий серо-голубоватый влажный оттенок речной осадочной глины
     palette: parsePalette([
-      '#7f8897',
-      '#8d96a5',
-      '#99a3b2',
-      '#a5b0bf',
-      '#b2bccb',
-      '#c2cad6'
+      '#6b7382',
+      '#7c8494',
+      '#8d96a6',
+      '#9ea8b8',
+      '#afb9c9',
+      '#c2ccdb'
+    ]),
+    accentPalette: parsePalette([
+      '#565e6c',
+      '#d7e0ed'
+    ])
+  },
+
+  terracotta: {
+    id: 'terracotta',
+    nameRu: 'Терракота',
+    category: 'clay',
+    template: 'terracotta',
+    // Теплый матовый оттенок обожженной керамической глины
+    palette: parsePalette([
+      '#7a3726',
+      '#8e432f',
+      '#a35039',
+      '#b85e45',
+      '#cb6d52',
+      '#dc7d62'
+    ]),
+    accentPalette: parsePalette([
+      '#572418',
+      '#ec9379'
     ])
   },
 
@@ -289,6 +315,7 @@ export const BLOCKS = {
   red_sandstone: {
     id: 'red_sandstone',
     nameRu: 'Красный песчаник',
+    category: 'layered',
     template: 'layered',
     // Слоистый терракотово-красный осадочный песчаник
     palette: parsePalette([
@@ -302,6 +329,109 @@ export const BLOCKS = {
     accentPalette: parsePalette([
       '#6f2d10',
       '#5a240c'
+    ])
+  },
+
+  // --- КАМЕННАЯ КЛАДКА ---
+  cobblestone: {
+    id: 'cobblestone',
+    nameRu: 'Булыжник',
+    category: 'stone',
+    template: 'cobblestone',
+    // Сбалансированная серая палитра кладки: от глубокого шва до верхнего скола
+    palette: parsePalette([
+      '#37373a',
+      '#49494d',
+      '#5c5c61',
+      '#717177',
+      '#86868d',
+      '#9d9da5'
+    ]),
+    accentPalette: parsePalette([
+      '#262628',
+      '#afafb8'
+    ])
+  },
+
+  bricks: {
+    id: 'bricks',
+    nameRu: 'Кирпич',
+    category: 'stone',
+    template: 'brick',
+    // Классический красный обожженный кирпич со светлыми фасками и темным швом
+    palette: parsePalette([
+      '#6d281e',
+      '#823326',
+      '#993f2f',
+      '#af4e3b',
+      '#c45f49',
+      '#d8735c'
+    ]),
+    accentPalette: parsePalette([
+      '#3a2824',
+      '#7b6a65'
+    ])
+  },
+
+  // --- ДРЕВЕСИНА И ПИЛОМАТЕРИАЛЫ ---
+  planks: {
+    id: 'planks',
+    nameRu: 'Доски',
+    category: 'wood',
+    template: 'wood_planks',
+    // Теплый дубовый оттенок с продольными волокнами
+    palette: parsePalette([
+      '#5b3f29',
+      '#715035',
+      '#876242',
+      '#9d744f',
+      '#b3865d',
+      '#c8996e'
+    ]),
+    accentPalette: parsePalette([
+      '#3a2617',
+      '#26190e'
+    ])
+  },
+
+  wood_log_side: {
+    id: 'wood_log_side',
+    nameRu: 'Дерево (бок)',
+    category: 'wood',
+    template: 'wood_log_side',
+    // Выразительная вертикальная фактура дубовой коры
+    palette: parsePalette([
+      '#38291a',
+      '#493724',
+      '#5c462f',
+      '#6f563a',
+      '#826747',
+      '#957854'
+    ]),
+    accentPalette: parsePalette([
+      '#251a10',
+      '#1b130b'
+    ])
+  },
+
+  wood_log_top: {
+    id: 'wood_log_top',
+    nameRu: 'Дерево (срез)',
+    category: 'wood',
+    template: 'wood_log_top',
+    // Светлая сердцевина со спила с годичными кольцами и темной внешней корой
+    palette: parsePalette([
+      '#795e3c',
+      '#907148',
+      '#a78456',
+      '#bd9764',
+      '#d2ab74',
+      '#e5be85'
+    ]),
+    accentPalette: parsePalette([
+      '#38291a',
+      '#493724',
+      '#251a10'
     ])
   }
 };

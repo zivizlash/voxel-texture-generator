@@ -9,6 +9,10 @@ import { generateGranular } from './src/templates/granular.js';
 import { generateOrganic } from './src/templates/organic.js';
 import { generateStone } from './src/templates/stone.js';
 import { generateLayered } from './src/templates/layered.js';
+import { generateCobblestone } from './src/templates/cobblestone.js';
+import { generateWoodPlanks, generateLogSide, generateLogTop } from './src/templates/wood.js';
+import { generateBrick } from './src/templates/brick.js';
+import { generateClay, generateTerracotta } from './src/templates/clay.js';
 import { generateViewerHtml } from './src/viewer.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -92,7 +96,14 @@ async function main() {
     granular: generateGranular,
     organic: generateOrganic,
     stone: generateStone,
-    layered: generateLayered
+    layered: generateLayered,
+    cobblestone: generateCobblestone,
+    wood_planks: generateWoodPlanks,
+    wood_log_side: generateLogSide,
+    wood_log_top: generateLogTop,
+    brick: generateBrick,
+    clay: generateClay,
+    terracotta: generateTerracotta
   };
 
   const blocksList = Object.values(BLOCKS);

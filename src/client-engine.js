@@ -287,8 +287,18 @@ export const CLIENT_ENGINE_SCRIPT = `
     clay: {
       id: 'clay',
       nameRu: 'Глина',
-      template: 'granular',
-      palette: parsePalette(['#7f8897', '#8d96a5', '#99a3b2', '#a5b0bf', '#b2bccb', '#c2cad6'])
+      category: 'clay',
+      template: 'clay',
+      palette: parsePalette(['#6b7382', '#7c8494', '#8d96a6', '#9ea8b8', '#afb9c9', '#c2ccdb']),
+      accentPalette: parsePalette(['#565e6c', '#d7e0ed'])
+    },
+    terracotta: {
+      id: 'terracotta',
+      nameRu: 'Терракота',
+      category: 'clay',
+      template: 'terracotta',
+      palette: parsePalette(['#7a3726', '#8e432f', '#a35039', '#b85e45', '#cb6d52', '#dc7d62']),
+      accentPalette: parsePalette(['#572418', '#ec9379'])
     },
     mud: {
       id: 'mud',
@@ -369,6 +379,46 @@ export const CLIENT_ENGINE_SCRIPT = `
       template: 'layered',
       palette: parsePalette(['#873917', '#9c441c', '#b05022', '#bf5e2b', '#cd6e37', '#da7e46']),
       accentPalette: parsePalette(['#6f2d10', '#5a240c'])
+    },
+    cobblestone: {
+      id: 'cobblestone',
+      nameRu: 'Булыжник',
+      category: 'stone',
+      template: 'cobblestone',
+      palette: parsePalette(['#37373a', '#49494d', '#5c5c61', '#717177', '#86868d', '#9d9da5']),
+      accentPalette: parsePalette(['#262628', '#afafb8'])
+    },
+    bricks: {
+      id: 'bricks',
+      nameRu: 'Кирпич',
+      category: 'stone',
+      template: 'brick',
+      palette: parsePalette(['#6d281e', '#823326', '#993f2f', '#af4e3b', '#c45f49', '#d8735c']),
+      accentPalette: parsePalette(['#3a2824', '#7b6a65'])
+    },
+    planks: {
+      id: 'planks',
+      nameRu: 'Доски',
+      category: 'wood',
+      template: 'wood_planks',
+      palette: parsePalette(['#5b3f29', '#715035', '#876242', '#9d744f', '#b3865d', '#c8996e']),
+      accentPalette: parsePalette(['#3a2617', '#26190e'])
+    },
+    wood_log_side: {
+      id: 'wood_log_side',
+      nameRu: 'Дерево (бок)',
+      category: 'wood',
+      template: 'wood_log_side',
+      palette: parsePalette(['#38291a', '#493724', '#5c462f', '#6f563a', '#826747', '#957854']),
+      accentPalette: parsePalette(['#251a10', '#1b130b'])
+    },
+    wood_log_top: {
+      id: 'wood_log_top',
+      nameRu: 'Дерево (срез)',
+      category: 'wood',
+      template: 'wood_log_top',
+      palette: parsePalette(['#795e3c', '#907148', '#a78456', '#bd9764', '#d2ab74', '#e5be85']),
+      accentPalette: parsePalette(['#38291a', '#493724', '#251a10'])
     }
   };
 
@@ -684,11 +734,407 @@ export const CLIENT_ENGINE_SCRIPT = `
     return pixels;
   }
 
+  function generateCobblestone(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, octaves, 4, 0.5);
+    const worley = new ToroidalWorley(prng, 9, 16);
+    const heightMap = createGrid(w, h);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const warped = warp.warp(x * scale, y * scale, warpStrength * 0.7, 16);
+        const cell = worley.sample(warped.x, warped.y, 'euclidean');
+        const macro = fbm.sample(warped.x, warped.y, 16);
+
+        const stoneDome = Math.min(1.0, cell.edge * 1.1);
+        const isMortarSeam = cell.edge < 0.85 ? 0.35 : 0;
+
+        const pixelNoise = prng.range(-0.25, 0.25);
+        heightMap[y][x] = stoneDome * 0.65 + macro * 0.20 + pixelNoise * 0.15 - isMortarSeam;
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.38 * lightStrength, w, h);
+
+    return normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.14 * ditherStrength,
+      ditherStrength: 0.15 * ditherStrength,
+      contrast: 1.15
+    });
+  }
+
+  function generateWoodPlanks(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, octaves, 4, 0.5);
+    const heightMap = createGrid(w, h);
+
+    const plankCount = 4;
+    const plankHeight = h / plankCount;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const localY = y % plankHeight;
+        const warped = warp.warp(x * scale * 0.8, y * scale * 1.8, warpStrength * 0.4, 16);
+        const fiber = fbm.sample(warped.x, warped.y, 16);
+
+        const plankBevel = Math.sin((localY / plankHeight) * Math.PI) * 0.15;
+        const grain = prng.range(-0.15, 0.15);
+
+        heightMap[y][x] = fiber * 0.55 + plankBevel + grain * 0.3 + 0.35;
+      }
+    }
+
+    for (let p = 0; p < plankCount; p++) {
+      const seamY = Math.floor(p * plankHeight);
+      for (let x = 0; x < w; x++) {
+        setWrapped(heightMap, x, seamY, getWrapped(heightMap, x, seamY, w, h) - 0.45, w, h);
+        const lowerSeam = (seamY + 1) % h;
+        setWrapped(heightMap, x, lowerSeam, getWrapped(heightMap, x, lowerSeam, w, h) + 0.18, w, h);
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.28 * lightStrength, w, h);
+
+    const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.08 * ditherStrength,
+      ditherStrength: 0.10 * ditherStrength,
+      contrast: 1.05
+    });
+
+    if (blockDef.accentPalette) {
+      for (let p = 0; p < plankCount; p++) {
+        const seamY = Math.floor(p * plankHeight) + 1;
+        const nailX1 = (p * 5 + 2) % w;
+        const nailX2 = (nailX1 + 8) % w;
+        const nailColor = blockDef.accentPalette[0];
+        pixels[seamY % h][nailX1] = { ...nailColor };
+        pixels[seamY % h][nailX2] = { ...nailColor };
+      }
+    }
+
+    return pixels;
+  }
+
+  function generateLogSide(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, octaves, 4, 0.5);
+    const heightMap = createGrid(w, h);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const warped = warp.warp(x * scale * 1.5, y * scale * 0.35, warpStrength * 0.6, 16);
+        const barkWave = fbm.sample(warped.x, warped.y, 16);
+
+        const verticalStripe = Math.sin(warped.x * (Math.PI * 2 / 16) * 3) * 0.25;
+        const pixelNoise = prng.range(-0.25, 0.25);
+
+        heightMap[y][x] = barkWave * 0.45 + verticalStripe + pixelNoise * 0.3 + 0.4;
+      }
+    }
+
+    const fissureCount = prng.int(2, 4);
+    for (let f = 0; f < fissureCount; f++) {
+      let fx = prng.int(0, w - 1);
+      for (let y = 0; y < h; y++) {
+        setWrapped(heightMap, fx, y, getWrapped(heightMap, fx, y, w, h) - 0.38, w, h);
+        setWrapped(heightMap, fx - 1, y, getWrapped(heightMap, fx - 1, y, w, h) + 0.22, w, h);
+        if (prng.chance(0.25)) fx += prng.choice([-1, 1]);
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.35 * lightStrength, w, h);
+
+    return normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.12 * ditherStrength,
+      ditherStrength: 0.14 * ditherStrength,
+      contrast: 1.10
+    });
+  }
+
+  function generateLogTop(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, octaves, 4, 0.5);
+    const heightMap = createGrid(w, h);
+
+    const centerX = 7.5;
+    const centerY = 7.5;
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        const warped = warp.warp(x * scale, y * scale, warpStrength * 0.7, 16);
+        const ringNoise = (fbm.sample(warped.x, warped.y, 16) - 0.5) * 1.6;
+        const ringDist = dist + ringNoise;
+
+        const ringFreq = 2.4;
+        const ringWave = Math.sin(ringDist * ringFreq) * 0.3;
+
+        const coreDepth = dist < 2.2 ? (2.2 - dist) * 0.35 : 0;
+        const grain = prng.range(-0.15, 0.15);
+
+        heightMap[y][x] = 0.5 + ringWave - coreDepth + grain * 0.25;
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.22 * lightStrength, w, h);
+
+    const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.08 * ditherStrength,
+      ditherStrength: 0.10 * ditherStrength,
+      contrast: 1.05
+    });
+
+    if (blockDef.accentPalette) {
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const isOuterBorder = (x === 0 || x === w - 1 || y === 0 || y === h - 1);
+          const isInnerBorder = (x === 1 || x === w - 2 || y === 1 || y === h - 2);
+
+          if (isOuterBorder) {
+            const barkTone = prng.choice(blockDef.accentPalette);
+            pixels[y][x] = { ...barkTone };
+          } else if (isInnerBorder && prng.chance(0.45)) {
+            const barkTone = blockDef.accentPalette[blockDef.accentPalette.length - 1];
+            pixels[y][x] = { ...barkTone };
+          }
+        }
+      }
+    }
+
+    return pixels;
+  }
+
+  function generateBrick(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, Math.min(3, octaves), 4, 0.5);
+    const heightMap = createGrid(w, h);
+
+    const brickShifts = [];
+    for (let b = 0; b < 8; b++) {
+      brickShifts.push(prng.range(-0.16, 0.16));
+    }
+
+    const isMortarMap = [];
+    for (let y = 0; y < h; y++) {
+      isMortarMap.push(new Uint8Array(w));
+    }
+
+    for (let y = 0; y < h; y++) {
+      const row = Math.floor(y / 4);
+      const localY = y % 4;
+      const isMortarH = (localY === 3);
+      const colShift = (row % 2 === 1) ? 4 : 0;
+
+      for (let x = 0; x < w; x++) {
+        const shiftedX = (x - colShift + w) % w;
+        const localX = shiftedX % 8;
+        const isMortarV = (localX === 7);
+
+        const isMortar = isMortarH || isMortarV;
+        isMortarMap[y][x] = isMortar ? 1 : 0;
+
+        if (isMortar) {
+          const mortarGrain = prng.range(-0.06, 0.06);
+          heightMap[y][x] = 0.12 + mortarGrain;
+        } else {
+          const brickCol = Math.floor(shiftedX / 8);
+          const brickIdx = (row * 2 + brickCol) % 8;
+          const brickShift = brickShifts[brickIdx];
+
+          const warped = warp.warp(x * scale, y * scale, warpStrength * 0.25, 16);
+          const surfaceNoise = (fbm.sample(warped.x, warped.y, 16) - 0.5) * 0.25;
+          const grain = prng.range(-0.08, 0.08);
+
+          let bevel = 0;
+          if (localY === 0) bevel += 0.22;
+          if (localX === 0) bevel += 0.18;
+          if (localY === 2) bevel -= 0.14;
+          if (localX === 6) bevel -= 0.14;
+
+          heightMap[y][x] = 0.62 + brickShift + bevel + surfaceNoise + grain;
+        }
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.35 * lightStrength, w, h);
+
+    const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.08 * ditherStrength,
+      ditherStrength: 0.10 * ditherStrength,
+      contrast: 1.15
+    });
+
+    if (blockDef.accentPalette && blockDef.accentPalette.length > 0) {
+      const mortarBase = blockDef.accentPalette[0];
+      const mortarLight = blockDef.accentPalette[1] || mortarBase;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (isMortarMap[y][x]) {
+            const isFleck = prng.chance(0.25);
+            pixels[y][x] = { ...(isFleck ? mortarLight : mortarBase) };
+          }
+        }
+      }
+    }
+
+    return pixels;
+  }
+
+  function generateClay(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, octaves, 2, 0.5);
+    const heightMap = createGrid(w, h);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const warped = warp.warp(x * scale, y * scale, warpStrength * 0.7, 16);
+        const smoothWave = fbm.sample(warped.x, warped.y, 16);
+        const fineGrain = prng.range(-0.10, 0.10);
+
+        heightMap[y][x] = smoothWave * 0.7 + fineGrain * 0.3 + 0.5;
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.20 * lightStrength, w, h);
+
+    return normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.05 * ditherStrength,
+      ditherStrength: 0.08 * ditherStrength,
+      contrast: 1.02
+    });
+  }
+
+  function generateTerracotta(blockDef, prng, w = 16, h = 16, params = {}) {
+    const {
+      octaves = 3,
+      warpStrength = 0.5,
+      scale = 1.0,
+      ditherStrength = 1.0,
+      lightStrength = 1.0
+    } = params;
+
+    const warp = new ToroidalDomainWarp(prng);
+    const fbm = new ToroidalFBM(prng, octaves, 3, 0.5);
+    const heightMap = createGrid(w, h);
+
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const warped = warp.warp(x * scale * 0.9, y * scale * 1.3, warpStrength * 0.6, 16);
+        const macro = fbm.sample(warped.x, warped.y, 16);
+        const pugWave = Math.sin((warped.y / 16) * Math.PI * 4) * 0.12;
+        const fineDust = prng.range(-0.14, 0.14);
+
+        heightMap[y][x] = macro * 0.6 + pugWave + fineDust * 0.28 + 0.5;
+      }
+    }
+
+    const litMap = applyDirectionalLighting(heightMap, 0.25 * lightStrength, w, h);
+
+    const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
+      w,
+      h,
+      prng,
+      pixelJitter: 0.08 * ditherStrength,
+      ditherStrength: 0.12 * ditherStrength,
+      contrast: 1.06
+    });
+
+    if (blockDef.accentPalette && blockDef.accentPalette.length > 0) {
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (prng.chance(0.025)) {
+            const fleck = prng.choice(blockDef.accentPalette);
+            pixels[y][x] = { ...fleck };
+          }
+        }
+      }
+    }
+
+    return pixels;
+  }
+
   const TEMPLATE_GENERATORS = {
     granular: generateGranular,
     organic: generateOrganic,
     stone: generateStone,
-    layered: generateLayered
+    layered: generateLayered,
+    cobblestone: generateCobblestone,
+    brick: generateBrick,
+    clay: generateClay,
+    terracotta: generateTerracotta,
+    wood_planks: generateWoodPlanks,
+    wood_log_side: generateLogSide,
+    wood_log_top: generateLogTop
   };
 
   // --- 6. Browser Canvas Renderer ---
@@ -780,7 +1226,7 @@ export const CLIENT_ENGINE_SCRIPT = `
       cb.checked = (v === '1');
     });
     window.updateAtlasCounter();
-    window.showToast('1️⃣ Выбран первый вариант каждого материала (16 блоков)');
+    window.showToast('1️⃣ Выбран первый вариант каждого материала (' + Object.keys(BLOCKS).length + ' блоков)');
   };
 
   // Чтение параметров из UI ползунков
