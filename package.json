@@ -4,7 +4,9 @@
   "description": "Procedural 16x16 pixel-art texture generator with seed, templates, palettes and tiling support",
   "type": "module",
   "scripts": {
-    "generate": "node generate.js"
+    "start": "node server.js",
+    "generate": "node generate.js",
+    "build:html": "node -e \"import('./src/viewer.js').then(m => import('node:fs').then(fs => fs.writeFileSync('index.html', m.generateViewerHtml({ seed: 1337 }))))\""
   },
   "keywords": ["procedural", "texture-generator", "pixel-art", "voxel", "tiling"],
   "license": "MIT"

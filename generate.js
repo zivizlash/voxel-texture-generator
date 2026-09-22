@@ -19,6 +19,11 @@ function parseArgs() {
   const args = process.argv.slice(2);
   let seed = 1337;
   let variantsCount = 5;
+  let octaves = 3;
+  let warpStrength = 0.5;
+  let scale = 1.0;
+  let ditherStrength = 1.0;
+  let lightStrength = 1.0;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--seed' && args[i + 1]) {
@@ -27,10 +32,25 @@ function parseArgs() {
     } else if (args[i] === '--variants' && args[i + 1]) {
       variantsCount = parseInt(args[i + 1], 10) || 5;
       i++;
+    } else if (args[i] === '--octaves' && args[i + 1]) {
+      octaves = parseInt(args[i + 1], 10) || 3;
+      i++;
+    } else if (args[i] === '--warp' && args[i + 1]) {
+      warpStrength = parseFloat(args[i + 1]) ?? 0.5;
+      i++;
+    } else if (args[i] === '--scale' && args[i + 1]) {
+      scale = parseFloat(args[i + 1]) ?? 1.0;
+      i++;
+    } else if (args[i] === '--dither' && args[i + 1]) {
+      ditherStrength = parseFloat(args[i + 1]) ?? 1.0;
+      i++;
+    } else if (args[i] === '--light' && args[i + 1]) {
+      lightStrength = parseFloat(args[i + 1]) ?? 1.0;
+      i++;
     }
   }
 
-  return { seed, variantsCount };
+  return { seed, variantsCount, octaves, warpStrength, scale, ditherStrength, lightStrength };
 }
 
 // Форматирование текущей даты и времени для папки
@@ -47,7 +67,7 @@ function getTimestampFolder() {
 }
 
 async function main() {
-  const { seed, variantsCount } = parseArgs();
+  const { seed, variantsCount, octaves, warpStrength, scale, ditherStrength, lightStrength } = parseArgs();
   const timestamp = getTimestampFolder();
 
   const outputDir = path.join(__dirname, 'output', timestamp);
@@ -60,6 +80,11 @@ async function main() {
   console.log(`=======================================================`);
   console.log(`Базовый сид:     ${seed}`);
   console.log(`Вариантов/блок:  ${variantsCount}`);
+  console.log(`Октавы fBm:      ${octaves}`);
+  console.log(`Domain Warping:  ${warpStrength}`);
+  console.log(`Масштаб (Scale): ${scale}x`);
+  console.log(`Дизеринг:        ${ditherStrength}x`);
+  console.log(`Освещение:       ${lightStrength}x`);
   console.log(`Папка генерации: ${outputDir}`);
   console.log(`-------------------------------------------------------\n`);
 
@@ -96,8 +121,14 @@ async function main() {
       const subSeed = (seed + bIndex * 1000 + v * 13) >>> 0;
       const prng = new PRNG(subSeed);
 
-      // Генерация 16x16 массива пикселей
-      const pixelGrid = generatorFn(block, prng, 16, 16);
+      // Генерация 16x16 массива пикселей с учетом параметров fBm и Warp
+      const pixelGrid = generatorFn(block, prng, 16, 16, {
+        octaves,
+        warpStrength,
+        scale,
+        ditherStrength,
+        lightStrength
+      });
 
       // Кодирование в валидный PNG файл
       const pngBuffer = encodePNG(16, 16, pixelGrid);
@@ -123,7 +154,8 @@ async function main() {
   const htmlContent = generateViewerHtml({
     runDate: timestamp,
     seed,
-    blocksData: reportData
+    blocksData: reportData,
+    initialParams: { octaves, warpStrength, scale, ditherStrength, lightStrength }
   });
 
   const htmlPath = path.join(outputDir, 'index.html');

@@ -4,10 +4,6 @@
  * левый край бесшовно стыкуется с правым, а верхний — с нижним.
  */
 
-function smoothstep(t) {
-  return t * t * (3 - 2 * t);
-}
-
 function quintic(t) {
   return t * t * t * (t * (t * 6 - 15) + 10);
 }
@@ -17,11 +13,11 @@ function quintic(t) {
  */
 export class ToroidalNoise {
   constructor(prng, period = 4) {
-    this.period = period;
+    this.period = Math.max(1, Math.round(period));
     this.grid = [];
-    for (let y = 0; y < period; y++) {
+    for (let y = 0; y < this.period; y++) {
       const row = [];
-      for (let x = 0; x < period; x++) {
+      for (let x = 0; x < this.period; x++) {
         row.push(prng.next());
       }
       this.grid.push(row);
@@ -29,8 +25,8 @@ export class ToroidalNoise {
   }
 
   sample(x, y, size = 16) {
-    const u = ((x % size) + size) % size / size * this.period;
-    const v = ((y % size) + size) % size / size * this.period;
+    const u = (((x % size) + size) % size) / size * this.period;
+    const v = (((y % size) + size) % size) / size * this.period;
 
     const x0 = Math.floor(u) % this.period;
     const y0 = Math.floor(v) % this.period;
@@ -48,14 +44,34 @@ export class ToroidalNoise {
 }
 
 /**
- * Фрактальный тороидальный шум (fBm)
+ * Фрактальное броуновское движение (fBm / Октавы) с тороидальной бесшовностью.
+ * Складывает несколько октав шума с разным масштабом (Frequency) и амплитудой (Amplitude):
+ * - Октава 1: крупные макро-пятна (основа рельефа)
+ * - Октава 2: средние вмятины (в 2 раза мельче, в 2 раза прозрачнее)
+ * - Октава 3: мелкая рябь (естественная пористость блоков)
+ * - Октавы 4+: микро-детали
  */
 export class ToroidalFBM {
-  constructor(prng, octaves = [ { period: 2, weight: 0.5 }, { period: 4, weight: 0.3 }, { period: 8, weight: 0.2 } ]) {
-    this.layers = octaves.map(oct => ({
-      noise: new ToroidalNoise(prng, oct.period),
-      weight: oct.weight
-    }));
+  constructor(prng, octavesOrCount = 3, basePeriod = 2, persistence = 0.5) {
+    if (Array.isArray(octavesOrCount)) {
+      this.layers = octavesOrCount.map(oct => ({
+        noise: new ToroidalNoise(prng, oct.period),
+        weight: oct.weight
+      }));
+    } else {
+      const count = Math.max(1, Math.min(6, Math.round(octavesOrCount || 3)));
+      this.layers = [];
+      let period = basePeriod;
+      let weight = 1.0;
+      for (let i = 0; i < count; i++) {
+        this.layers.push({
+          noise: new ToroidalNoise(prng.fork(i * 101), Math.min(16, period)),
+          weight
+        });
+        weight *= persistence;
+        period *= 2;
+      }
+    }
     const totalWeight = this.layers.reduce((sum, l) => sum + l.weight, 0);
     this.layers.forEach(l => l.weight /= totalWeight);
   }
@@ -66,6 +82,36 @@ export class ToroidalFBM {
       val += layer.noise.sample(x, y, size) * layer.weight;
     }
     return val;
+  }
+}
+
+/**
+ * Искажение пространства (Domain Warping) с тороидальным зацикливанием.
+ * Пропускает координаты (x, y) через пару ортогональных тороидальных шумов
+ * перед выборкой основного рельефа. Создает завихрения, потеки, кольца и мраморные разводы.
+ * За счет модульного зацикливания гарантирует 100% математическую бесшовность.
+ */
+export class ToroidalDomainWarp {
+  constructor(prng) {
+    this.noiseX = new ToroidalFBM(prng.fork(211), [
+      { period: 4, weight: 0.65 },
+      { period: 8, weight: 0.35 }
+    ]);
+    this.noiseY = new ToroidalFBM(prng.fork(313), [
+      { period: 4, weight: 0.65 },
+      { period: 8, weight: 0.35 }
+    ]);
+  }
+
+  warp(x, y, strength = 0.5, size = 16) {
+    if (strength <= 0) return { x, y };
+    const maxOffset = strength * size * 0.28;
+    const dx = (this.noiseX.sample(x, y, size) - 0.5) * 2 * maxOffset;
+    const dy = (this.noiseY.sample(x, y, size) - 0.5) * 2 * maxOffset;
+    return {
+      x: ((x + dx) % size + size) % size,
+      y: ((y + dy) % size + size) % size
+    };
   }
 }
 

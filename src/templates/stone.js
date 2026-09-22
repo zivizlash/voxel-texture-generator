@@ -1,24 +1,33 @@
-import { ToroidalFBM, ToroidalWorley, createGrid, getWrapped, setWrapped } from '../noise.js';
+import { ToroidalFBM, ToroidalWorley, ToroidalDomainWarp, createGrid, getWrapped, setWrapped } from '../noise.js';
 import { applyDirectionalLighting, normalizeAndMapToPalette } from '../shading.js';
 
 /**
  * Шаблон для плотных и магматических пород (Камень, Андезит, Гранит, Диорит).
- * Попиксельное распределение: зернистая структура с естественным чередованием
- * соседних оттенков, тонкими трещинами и минеральными кристаллами.
+ * Использует:
+ * 1. fBm (октавы) для формирования макро-структуры породы.
+ * 2. Domain Warping для искривления трещин и минеральных пластов (эффект магматических складок/мрамора).
+ * 3. Тороидальный клеточный шум Worley для сколов и граней.
  */
-export function generateStone(blockDef, prng, w = 16, h = 16) {
+export function generateStone(blockDef, prng, w = 16, h = 16, params = {}) {
+  const {
+    octaves = 3,
+    warpStrength = 0.5,
+    scale = 1.0,
+    ditherStrength = 1.0,
+    lightStrength = 1.0
+  } = params;
+
   const isDiorite = blockDef.id === 'diorite';
   const isGranite = blockDef.id === 'granite';
   const isAndesite = blockDef.id === 'andesite';
 
-  // 1. Макро-форма: мягкий FBM рельеф
-  const fbm = new ToroidalFBM(prng, [
-    { period: 2, weight: 0.35 },
-    { period: 4, weight: 0.35 },
-    { period: 8, weight: 0.30 }
-  ]);
+  // 1. Искажение пространства (Domain Warping)
+  const warp = new ToroidalDomainWarp(prng);
 
-  // 2. Угловатые микро-сколы через тороидальный Worley
+  // 2. Макро-форма: многослойный fBm
+  const fbm = new ToroidalFBM(prng, octaves, 2, 0.5);
+
+  // 3. Угловатые сколы Worley
   const cellCount = isDiorite ? 12 : (isGranite ? 10 : 8);
   const worley = new ToroidalWorley(prng, cellCount, 16);
 
@@ -26,22 +35,21 @@ export function generateStone(blockDef, prng, w = 16, h = 16) {
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const macro = fbm.sample(x, y, 16);
-      const cell = worley.sample(x, y, 'manhattan');
+      // Искаженные координаты для волнистости кристаллов и трещин
+      const warped = warp.warp(x * scale, y * scale, warpStrength, 16);
 
-      // Высокочастотный попиксельный шум для разрушения островков
+      const macro = fbm.sample(warped.x, warped.y, 16);
+      const cell = worley.sample(warped.x, warped.y, 'manhattan');
+
       const pixelNoise = prng.range(-0.32, 0.32);
       const microPattern = ((x * 5 + y * 11) % 7 - 3) * 0.04;
-
-      // Трещины на стыках ячеек
       const edgeDepth = Math.min(1.0, cell.edge * 0.6);
 
-      const combined = macro * 0.35 + cell.val * 0.25 + edgeDepth * 0.15 + (pixelNoise + microPattern) * 0.25;
-      heightMap[y][x] = combined;
+      heightMap[y][x] = macro * 0.35 + cell.val * 0.25 + edgeDepth * 0.15 + (pixelNoise + microPattern) * 0.25;
     }
   }
 
-  // 3. Тонкие направленные трещины (1-2 пикселя толщиной)
+  // 4. Тонкие трещины (следуют с учетом деформации)
   const crackCount = prng.int(2, 4);
   for (let c = 0; c < crackCount; c++) {
     let cx = prng.int(0, w - 1);
@@ -52,10 +60,8 @@ export function generateStone(blockDef, prng, w = 16, h = 16) {
 
     for (let step = 0; step < len; step++) {
       const curr = getWrapped(heightMap, cx, cy, w, h);
-      // Углубление трещины
       setWrapped(heightMap, cx, cy, curr - 0.35, w, h);
 
-      // Верхняя грань трещины ловит свет
       const above = getWrapped(heightMap, cx, cy - 1, w, h);
       setWrapped(heightMap, cx, cy - 1, above + 0.20, w, h);
 
@@ -64,22 +70,21 @@ export function generateStone(blockDef, prng, w = 16, h = 16) {
     }
   }
 
-  // 4. Освещение сверху-слева
-  const litMap = applyDirectionalLighting(heightMap, 0.32, w, h);
+  // 5. Освещение сверху-слева
+  const litMap = applyDirectionalLighting(heightMap, 0.32 * lightStrength, w, h);
 
-  // 5. Попиксельная нормализация палитры с дизерингом
+  // 6. Попиксельная нормализация с дизерингом Байера
   const pixels = normalizeAndMapToPalette(litMap, blockDef.palette, {
     w,
     h,
     prng,
-    pixelJitter: isAndesite ? 0.16 : 0.12,
-    ditherStrength: isAndesite ? 0.18 : 0.14,
+    pixelJitter: (isAndesite ? 0.16 : 0.12) * ditherStrength,
+    ditherStrength: (isAndesite ? 0.18 : 0.14) * ditherStrength,
     contrast: 1.10
   });
 
-  // 6. Попиксельное распределение минеральных кристаллов (Диорит и Гранит)
+  // 7. Попиксельное распределение минеральных кристаллов
   if (isDiorite && blockDef.accentPalette) {
-    // У диорита отдельные темные кристаллы амфибола хаотично рассеяны попиксельно
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (prng.chance(0.24)) {
@@ -89,15 +94,12 @@ export function generateStone(blockDef, prng, w = 16, h = 16) {
       }
     }
   } else if (isGranite && blockDef.accentPalette) {
-    // У гранита чередуются светлые зерна кварца и темная слюда
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const roll = prng.next();
         if (roll < 0.14) {
-          // Светлый кварцевый пиксель
           pixels[y][x] = { ...blockDef.accentPalette[1] };
         } else if (roll > 0.88) {
-          // Темный пиксель слюды
           pixels[y][x] = { ...blockDef.accentPalette[0] };
         }
       }
