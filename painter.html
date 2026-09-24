@@ -325,6 +325,19 @@
       display: block;
     }
 
+    #referenceOverlayCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      pointer-events: none;
+      display: none;
+      opacity: 0.45;
+      z-index: 5;
+    }
+
     #gridOverlay {
       position: absolute;
       inset: 0;
@@ -509,6 +522,180 @@
       line-height: 1.4;
     }
 
+    /* Сетка правой колонки: 2 суб-колонки на широких экранах */
+    .sidebar-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    @media (max-width: 1100px) {
+      .sidebar-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sidebar-column {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* 3D Просмотр воксельного блока */
+    .cube-stage {
+      width: 100%;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #090a0f;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+      perspective: 750px;
+      cursor: grab;
+      user-select: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cube-stage:active {
+      cursor: grabbing;
+    }
+
+    .voxel-cube {
+      width: 96px;
+      height: 96px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-24deg) rotateY(45deg);
+      transition: transform 0.05s ease-out;
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      background: #000;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid rgba(0, 0, 0, 0.45);
+    }
+
+    .face-top { transform: rotateX(90deg) translateZ(48px); filter: brightness(1.08); }
+    .face-front { transform: rotateY(0deg) translateZ(48px); filter: brightness(0.92); }
+    .face-right { transform: rotateY(90deg) translateZ(48px); filter: brightness(0.78); }
+    .face-bottom { transform: rotateX(-90deg) translateZ(48px); filter: brightness(0.70); }
+    .face-left { transform: rotateY(-90deg) translateZ(48px); filter: brightness(0.85); }
+    .face-back { transform: rotateY(180deg) translateZ(48px); filter: brightness(0.80); }
+
+    .cube-controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* Панель референса (образца) */
+    .ref-dropzone {
+      border: 2px dashed #3a3d4f;
+      border-radius: var(--radius-sm);
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      background: rgba(15, 17, 24, 0.6);
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+
+    .ref-dropzone:hover, .ref-dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.08);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .ref-content-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #0f1015;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+
+    .ref-canvas-wrap {
+      width: 72px;
+      height: 72px;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+      cursor: crosshair;
+    }
+
+    #refCanvas {
+      width: 72px;
+      height: 72px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    .ref-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ref-filename {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ref-dims {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-dim);
+    }
+
+    .ref-hint {
+      font-size: 11px;
+      color: #34d399;
+      font-weight: 500;
+    }
+
+    .ref-overlay-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: #0f1015;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .ref-chips-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
     /* Уведомление Toast */
     .toast-notification {
       position: fixed;
@@ -640,6 +827,7 @@
       <!-- Холст для рисования -->
       <div class="canvas-container">
         <div class="canvas-wrapper" id="canvasWrapper">
+          <canvas id="referenceOverlayCanvas" width="16" height="16"></canvas>
           <canvas id="paintCanvas" width="16" height="16"></canvas>
           <div id="gridOverlay" class="show-grid"></div>
         </div>
@@ -651,72 +839,177 @@
         </div>
       </div>
 
-      <!-- Боковые панели с палитрами и предпросмотром -->
+      <!-- Боковые панели с палитрами, референсом, 3D кубом и тайлингом -->
       <div class="sidebar-panels">
-        <!-- Панель выбора цвета -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>Активный цвет</span>
-          </div>
-          <div class="color-picker-row">
-            <div class="color-preview-box" id="colorPreviewBox" style="background-color: #3b82f6;">
-              <input type="color" id="nativeColorInput" value="#3b82f6" oninput="onColorPicked(this.value)">
+        <div class="sidebar-grid">
+          <!-- Колонка 1: Цвета, палитры и референс -->
+          <div class="sidebar-column">
+            <!-- Панель выбора цвета -->
+            <div class="panel-card">
+              <div class="panel-title">
+                <span>Активный цвет</span>
+              </div>
+              <div class="color-picker-row">
+                <div class="color-preview-box" id="colorPreviewBox" style="background-color: #3b82f6;">
+                  <input type="color" id="nativeColorInput" value="#3b82f6" oninput="onColorPicked(this.value)">
+                </div>
+                <input type="text" id="colorHexInput" class="color-hex-input" value="#3B82F6" maxlength="7" onchange="onHexEntered(this.value)">
+                <span style="font-size: 12px; color: var(--text-dim);">Кликните на квадрат для системной палитры</span>
+              </div>
             </div>
-            <input type="text" id="colorHexInput" class="color-hex-input" value="#3B82F6" maxlength="7" onchange="onHexEntered(this.value)">
-            <span style="font-size: 12px; color: var(--text-dim);">Кликните на квадрат для системной палитры</span>
-          </div>
-        </div>
 
-        <!-- Предустановленные палитры материалов -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>Палитры материалов</span>
-          </div>
-          <div class="palette-select-group">
-            <select id="paletteSelect" class="palette-dropdown" onchange="loadMaterialPalette(this.value)">
-              <option value="stone">Камень (Stone)</option>
-              <option value="cobblestone">Булыжник (Cobblestone)</option>
-              <option value="bricks">Кирпич (Brick)</option>
-              <option value="planks">Доски (Planks)</option>
-              <option value="wood_log_side">Кора дерева (Log Side)</option>
-              <option value="sand">Песок (Sand)</option>
-              <option value="red_sand">Красный песок (Red Sand)</option>
-              <option value="gravel">Гравий (Gravel)</option>
-              <option value="clay">Глина (Clay)</option>
-              <option value="terracotta">Терракота (Terracotta)</option>
-              <option value="mud">Грязь (Mud)</option>
-              <option value="coarse_dirt">Каменистая земля (Dirt)</option>
-              <option value="deepslate">Глубинный сланец (Deepslate)</option>
-              <option value="sandstone">Песчаник (Sandstone)</option>
-              <option value="classic">Классическая 16-цветная</option>
-            </select>
-          </div>
-          <div class="swatches-grid" id="materialSwatches">
-            <!-- Заполняется динамически -->
-          </div>
-        </div>
-
-        <!-- Недавние цвета -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>Недавние цвета</span>
-          </div>
-          <div class="swatches-grid" id="recentSwatches">
-            <!-- Заполняется по мере рисования -->
-          </div>
-        </div>
-
-        <!-- Предпросмотр бесшовности (3x3 Тайлинг) -->
-        <div class="panel-card">
-          <div class="panel-title">
-            <span>Бесшовность (3×3 Тайлинг)</span>
-          </div>
-          <div class="tiling-box">
-            <div class="tiling-canvas-wrap">
-              <canvas id="tilePreviewCanvas" width="48" height="48"></canvas>
+            <!-- Предустановленные палитры материалов -->
+            <div class="panel-card">
+              <div class="panel-title">
+                <span>Палитры материалов</span>
+              </div>
+              <div class="palette-select-group">
+                <select id="paletteSelect" class="palette-dropdown" onchange="loadMaterialPalette(this.value)">
+                  <option value="stone">Камень (Stone)</option>
+                  <option value="cobblestone">Булыжник (Cobblestone)</option>
+                  <option value="bricks">Кирпич (Brick)</option>
+                  <option value="planks">Доски (Planks)</option>
+                  <option value="wood_log_side">Кора дерева (Log Side)</option>
+                  <option value="sand">Песок (Sand)</option>
+                  <option value="red_sand">Красный песок (Red Sand)</option>
+                  <option value="gravel">Гравий (Gravel)</option>
+                  <option value="clay">Глина (Clay)</option>
+                  <option value="terracotta">Терракота (Terracotta)</option>
+                  <option value="mud">Грязь (Mud)</option>
+                  <option value="coarse_dirt">Каменистая земля (Dirt)</option>
+                  <option value="deepslate">Глубинный сланец (Deepslate)</option>
+                  <option value="sandstone">Песчаник (Sandstone)</option>
+                  <option value="classic">Классическая 16-цветная</option>
+                </select>
+              </div>
+              <div class="swatches-grid" id="materialSwatches">
+                <!-- Заполняется динамически -->
+              </div>
             </div>
-            <div class="tiling-desc">
-              В реальном времени показывает, как текстура будет стыковаться сама с собой при повторении в воксельном мире.
+
+            <!-- Недавние цвета -->
+            <div class="panel-card">
+              <div class="panel-title">
+                <span>Недавние цвета</span>
+              </div>
+              <div class="swatches-grid" id="recentSwatches">
+                <!-- Заполняется по мере рисования -->
+              </div>
+            </div>
+
+            <!-- Панель референса (образца) -->
+            <div class="panel-card" id="refCard">
+              <div class="panel-title">
+                <span>🖼️ Референс (Образец)</span>
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="pasteReferenceFromClipboard()" title="Вставить из буфера обмена (Ctrl+V)">
+                    📋 Вставить
+                  </button>
+                  <button type="button" class="btn btn-tiny btn-secondary" id="clearRefBtn" onclick="clearReference()" style="display: none;" title="Удалить референс">
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <!-- Зона загрузки -->
+              <label class="ref-dropzone" id="refDropzone">
+                <span style="font-size: 22px;">📁</span>
+                <span style="font-size: 12px; font-weight: 600; color: #fff;">Загрузить PNG референс</span>
+                <span style="font-size: 10px; color: var(--text-dim);">Перетащите картинку или нажмите для выбора</span>
+                <input type="file" id="refFileInput" accept="image/*" style="display: none;" onchange="handleRefFileSelect(this)">
+              </label>
+
+              <!-- Блок отображения референса (когда загружен) -->
+              <div class="ref-content-box" id="refContentBox" style="display: none;">
+                <div class="ref-canvas-wrap" id="refCanvasWrap" title="Кликните на пиксель референса, чтобы взять этот цвет в палитру!">
+                  <canvas id="refCanvas" width="16" height="16"></canvas>
+                </div>
+                <div class="ref-meta">
+                  <div class="ref-filename" id="refFilenameLabel">image.png</div>
+                  <div class="ref-dims" id="refDimsLabel">16×16 px</div>
+                  <div class="ref-hint">💧 Клик по пикселю берёт цвет</div>
+                  <div style="display: flex; gap: 6px; margin-top: 4px;">
+                    <button type="button" class="btn btn-tiny btn-primary" onclick="copyReferenceToCanvas()" title="Скопировать пиксели референса на холст">
+                      ⬇ В холст
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Управление калькой (наложение на холст) -->
+              <div class="ref-overlay-controls" id="refOverlayControls" style="display: none;">
+                <label style="font-size: 12px; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                  <input type="checkbox" id="refOverlayToggle" onchange="toggleReferenceOverlay(this.checked)">
+                  👁️ Калька на холсте
+                </label>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="font-size: 11px; color: var(--text-dim);">Прозрачность:</span>
+                  <input type="range" id="refOpacityRange" min="10" max="90" step="5" value="40" style="width: 70px;" oninput="setReferenceOpacity(this.value)">
+                  <span id="refOpacityBadge" style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #34d399; min-width: 28px;">40%</span>
+                </div>
+              </div>
+
+              <!-- Пресеты образцов -->
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--text-dim);">Готовые образцы:</span>
+                <div class="ref-chips-row">
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="loadReferencePreset('diamond_ore')">💎 Руда</button>
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="loadReferencePreset('grass')">🌱 Трава</button>
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="loadReferencePreset('brick')">🧱 Кирпич</button>
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="loadReferencePreset('planks')">🪵 Доски</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Колонка 2: 3D Просмотр и Бесшовность -->
+          <div class="sidebar-column">
+            <!-- 3D Просмотр блока -->
+            <div class="panel-card">
+              <div class="panel-title">
+                <span>🧊 3D Просмотр блока</span>
+                <span style="font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #34d399; background: rgba(16, 185, 129, 0.12); padding: 2px 6px; border-radius: 4px;">Live 3D</span>
+              </div>
+
+              <div class="cube-stage" id="cubeStage" title="Зажмите ЛКМ и двигайте курсор для свободного вращения куба">
+                <div class="voxel-cube" id="voxelCube">
+                  <canvas class="cube-face face-top" id="cubeFaceTop" width="16" height="16"></canvas>
+                  <canvas class="cube-face face-front" id="cubeFaceFront" width="16" height="16"></canvas>
+                  <canvas class="cube-face face-right" id="cubeFaceRight" width="16" height="16"></canvas>
+                  <canvas class="cube-face face-bottom" id="cubeFaceBottom" width="16" height="16"></canvas>
+                  <canvas class="cube-face face-left" id="cubeFaceLeft" width="16" height="16"></canvas>
+                  <canvas class="cube-face face-back" id="cubeFaceBack" width="16" height="16"></canvas>
+                </div>
+              </div>
+
+              <div class="cube-controls-bar">
+                <div style="display: flex; gap: 4px;">
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="setCubeAngle('iso')" title="Изометрический ракурс">📐 Изо</button>
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="setCubeAngle('front')" title="Вид спереди">🟦 Фас</button>
+                  <button type="button" class="btn btn-tiny btn-secondary" onclick="setCubeAngle('top')" title="Вид сверху">⬆ Верх</button>
+                </div>
+                <button type="button" class="btn btn-tiny btn-secondary" id="autoRotateBtn" onclick="toggleAutoRotate()" title="Включить/выключить плавное авто-вращение">
+                  ▶ Вращение
+                </button>
+              </div>
+              <div style="font-size: 11px; color: var(--text-dim); text-align: center;">
+                Все 6 граней блока обновляются в реальном времени при рисовании.
+              </div>
+            </div>
+
+            <!-- Предпросмотр бесшовности (3x3 Тайлинг) -->
+            <div class="panel-card">
+              <div class="panel-title">
+                <span>Бесшовность (3×3 Тайлинг)</span>
+              </div>
+              <div class="tiling-box">
+                <div class="tiling-canvas-wrap">
+                  <canvas id="tilePreviewCanvas" width="48" height="48"></canvas>
+                </div>
+                <div class="tiling-desc">
+                  В реальном времени показывает, как текстура будет стыковаться сама с собой при повторении в воксельном мире.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -771,9 +1064,12 @@
       saveHistory();
       renderCanvas();
       updateTiling();
+      update3DCube();
       loadMaterialPalette('stone');
       renderRecentColors();
       setupCanvasEvents();
+      setup3DCubeEvents();
+      setupReferenceEvents();
       setupHotkeys();
     }
 
@@ -818,6 +1114,7 @@
         }
       }
       updateTiling();
+      update3DCube();
     }
 
     // Обновление тайлинг-превью 3х3 (48х48)
@@ -1293,6 +1590,397 @@
       toast._timeout = setTimeout(() => {
         toast.classList.remove('visible');
       }, 2400);
+    }
+
+    // --- 3D Просмотр блока ---
+    let cubeRotation = { x: -24, y: 45 };
+    let isDraggingCube = false;
+    let lastCubeMouse = { x: 0, y: 0 };
+    let isAutoRotating = false;
+    let autoRotateId = null;
+
+    const CUBE_FACES = ['cubeFaceTop', 'cubeFaceFront', 'cubeFaceRight', 'cubeFaceBottom', 'cubeFaceLeft', 'cubeFaceBack'];
+
+    function update3DCube() {
+      CUBE_FACES.forEach(id => {
+        const fCanvas = document.getElementById(id);
+        if (fCanvas) {
+          const fCtx = fCanvas.getContext('2d');
+          fCtx.clearRect(0, 0, 16, 16);
+          fCtx.drawImage(canvas, 0, 0);
+        }
+      });
+    }
+
+    function applyCubeTransform() {
+      const cube = document.getElementById('voxelCube');
+      if (cube) {
+        cube.style.transform = `rotateX(${cubeRotation.x}deg) rotateY(${cubeRotation.y}deg)`;
+      }
+    }
+
+    function setCubeAngle(angle) {
+      if (angle === 'iso') cubeRotation = { x: -24, y: 45 };
+      else if (angle === 'front') cubeRotation = { x: 0, y: 0 };
+      else if (angle === 'top') cubeRotation = { x: -90, y: 0 };
+      applyCubeTransform();
+    }
+
+    function toggleAutoRotate() {
+      isAutoRotating = !isAutoRotating;
+      const btn = document.getElementById('autoRotateBtn');
+      if (btn) {
+        btn.textContent = isAutoRotating ? '⏸ Стоп' : '▶ Вращение';
+        if (isAutoRotating) btn.classList.add('btn-active');
+        else btn.classList.remove('btn-active');
+      }
+      if (isAutoRotating) {
+        runAutoRotate();
+      } else if (autoRotateId) {
+        cancelAnimationFrame(autoRotateId);
+      }
+    }
+
+    function runAutoRotate() {
+      if (!isAutoRotating) return;
+      cubeRotation.y = (cubeRotation.y + 0.6) % 360;
+      applyCubeTransform();
+      autoRotateId = requestAnimationFrame(runAutoRotate);
+    }
+
+    function setup3DCubeEvents() {
+      const stage = document.getElementById('cubeStage');
+      if (!stage) return;
+
+      stage.addEventListener('mousedown', (e) => {
+        isDraggingCube = true;
+        lastCubeMouse = { x: e.clientX, y: e.clientY };
+        if (isAutoRotating) toggleAutoRotate();
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingCube) return;
+        const dx = e.clientX - lastCubeMouse.x;
+        const dy = e.clientY - lastCubeMouse.y;
+        cubeRotation.y += dx * 0.7;
+        cubeRotation.x -= dy * 0.7;
+        cubeRotation.x = Math.max(-90, Math.min(90, cubeRotation.x));
+        lastCubeMouse = { x: e.clientX, y: e.clientY };
+        applyCubeTransform();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDraggingCube = false;
+      });
+
+      // Touch
+      stage.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          isDraggingCube = true;
+          lastCubeMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          if (isAutoRotating) toggleAutoRotate();
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (!isDraggingCube || !e.touches || !e.touches[0]) return;
+        const dx = e.touches[0].clientX - lastCubeMouse.x;
+        const dy = e.touches[0].clientY - lastCubeMouse.y;
+        cubeRotation.y += dx * 0.7;
+        cubeRotation.x -= dy * 0.7;
+        cubeRotation.x = Math.max(-90, Math.min(90, cubeRotation.x));
+        lastCubeMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        applyCubeTransform();
+      }, { passive: true });
+
+      window.addEventListener('touchend', () => {
+        isDraggingCube = false;
+      });
+    }
+
+    // --- Референс (Образец) ---
+    let refPixels = null;
+    let refFileName = '';
+    let refOpacity = 0.4;
+
+    const refCanvas = document.getElementById('refCanvas');
+    const refCtx = refCanvas ? refCanvas.getContext('2d') : null;
+    const refOverlayCanvas = document.getElementById('referenceOverlayCanvas');
+    const refOverlayCtx = refOverlayCanvas ? refOverlayCanvas.getContext('2d') : null;
+
+    function handleRefFileSelect(input) {
+      if (!input.files || !input.files[0]) return;
+      loadReferenceFromFile(input.files[0]);
+      input.value = '';
+    }
+
+    function loadReferenceFromFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Пожалуйста, выберите файл изображения');
+        return;
+      }
+      refFileName = file.name;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const temp = document.createElement('canvas');
+          temp.width = 16;
+          temp.height = 16;
+          const tCtx = temp.getContext('2d');
+          tCtx.imageSmoothingEnabled = false;
+          tCtx.drawImage(img, 0, 0, 16, 16);
+          const data = tCtx.getImageData(0, 0, 16, 16).data;
+
+          const parsed = new Array(256);
+          for (let i = 0; i < 256; i++) {
+            const a = data[i * 4 + 3];
+            if (a < 10) {
+              parsed[i] = null;
+            } else {
+              const r = data[i * 4];
+              const g = data[i * 4 + 1];
+              const b = data[i * 4 + 2];
+              parsed[i] = rgbToHexValues(r, g, b);
+            }
+          }
+
+          setReferenceData(parsed, file.name, `${img.width}×${img.height} ➔ 16×16`);
+          showToast(`🖼️ Референс загружен: ${file.name}`);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setReferenceData(pixelArr, name, dimsText) {
+      refPixels = pixelArr;
+      refFileName = name;
+
+      document.getElementById('refDropzone').style.display = 'none';
+      document.getElementById('refContentBox').style.display = 'flex';
+      document.getElementById('refOverlayControls').style.display = 'flex';
+      document.getElementById('clearRefBtn').style.display = 'inline-flex';
+
+      document.getElementById('refFilenameLabel').textContent = name;
+      document.getElementById('refDimsLabel').textContent = dimsText;
+
+      renderReference();
+    }
+
+    function renderReference() {
+      if (!refPixels) return;
+      const rCanvas = document.getElementById('refCanvas');
+      if (rCanvas) {
+        const rCtx = rCanvas.getContext('2d');
+        rCtx.clearRect(0, 0, 16, 16);
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const c = refPixels[y * 16 + x];
+            if (c) {
+              rCtx.fillStyle = c;
+              rCtx.fillRect(x, y, 1, 1);
+            }
+          }
+        }
+      }
+
+      const oCanvas = document.getElementById('referenceOverlayCanvas');
+      if (oCanvas) {
+        const oCtx = oCanvas.getContext('2d');
+        oCtx.clearRect(0, 0, 16, 16);
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const c = refPixels[y * 16 + x];
+            if (c) {
+              oCtx.fillStyle = c;
+              oCtx.fillRect(x, y, 1, 1);
+            }
+          }
+        }
+      }
+    }
+
+    function clearReference() {
+      refPixels = null;
+      refFileName = '';
+      const rCanvas = document.getElementById('refCanvas');
+      if (rCanvas) {
+        const rCtx = rCanvas.getContext('2d');
+        rCtx.clearRect(0, 0, 16, 16);
+      }
+      const oCanvas = document.getElementById('referenceOverlayCanvas');
+      if (oCanvas) {
+        const oCtx = oCanvas.getContext('2d');
+        oCtx.clearRect(0, 0, 16, 16);
+      }
+
+      document.getElementById('refDropzone').style.display = 'flex';
+      document.getElementById('refContentBox').style.display = 'none';
+      document.getElementById('refOverlayControls').style.display = 'none';
+      document.getElementById('clearRefBtn').style.display = 'none';
+
+      toggleReferenceOverlay(false);
+      const chk = document.getElementById('refOverlayToggle');
+      if (chk) chk.checked = false;
+
+      showToast('Референс удален');
+    }
+
+    function copyReferenceToCanvas() {
+      if (!refPixels) return;
+      pixels = [...refPixels];
+      renderCanvas();
+      saveHistory();
+      showToast('⬇ Референс скопирован на холст');
+    }
+
+    function toggleReferenceOverlay(show) {
+      const oCanvas = document.getElementById('referenceOverlayCanvas');
+      if (oCanvas) {
+        oCanvas.style.display = show ? 'block' : 'none';
+        oCanvas.style.opacity = refOpacity;
+      }
+    }
+
+    function setReferenceOpacity(val) {
+      refOpacity = parseInt(val, 10) / 100;
+      const badge = document.getElementById('refOpacityBadge');
+      if (badge) badge.textContent = val + '%';
+      const oCanvas = document.getElementById('referenceOverlayCanvas');
+      if (oCanvas) {
+        oCanvas.style.opacity = refOpacity;
+      }
+    }
+
+    async function pasteReferenceFromClipboard() {
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              loadReferenceFromFile(blob);
+              return;
+            }
+          }
+        }
+        showToast('В буфере обмена нет изображения');
+      } catch (err) {
+        showToast('Нажмите Ctrl+V или разрешите доступ к буферу');
+      }
+    }
+
+    // Встроенные пресеты референсов
+    function loadReferencePreset(type) {
+      const parsed = new Array(256).fill(null);
+      let name = '';
+
+      if (type === 'diamond_ore') {
+        name = 'Алмазная руда (16×16)';
+        const stonePals = ['#474747', '#585858', '#6b6b6b', '#7d7d7d', '#8f8f8f'];
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            parsed[y * 16 + x] = stonePals[(x * 3 + y * 7) % stonePals.length];
+          }
+        }
+        const oreClusters = [
+          { x: 4, y: 4, c: '#ffffff' }, { x: 5, y: 4, c: '#7fffff' }, { x: 4, y: 5, c: '#4dedf0' }, { x: 5, y: 5, c: '#1b8899' },
+          { x: 10, y: 10, c: '#ffffff' }, { x: 11, y: 10, c: '#7fffff' }, { x: 11, y: 11, c: '#4dedf0' }, { x: 10, y: 11, c: '#1b8899' },
+          { x: 10, y: 5, c: '#4dedf0' }, { x: 4, y: 11, c: '#4dedf0' }
+        ];
+        oreClusters.forEach(pt => {
+          parsed[pt.y * 16 + pt.x] = pt.c;
+        });
+      } else if (type === 'grass') {
+        name = 'Блок дерна (16×16)';
+        const greenTones = ['#4c9431', '#5ea83b', '#70ba44', '#86cf53'];
+        const dirtTones = ['#4d3724', '#5c432d', '#6c5037', '#7d5e42', '#8d6c4d'];
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const overhang = 4 + ((x * 5) % 3);
+            if (y <= overhang) {
+              parsed[y * 16 + x] = greenTones[(x * 2 + y * 5) % greenTones.length];
+            } else {
+              parsed[y * 16 + x] = dirtTones[(x * 3 + y * 7) % dirtTones.length];
+            }
+          }
+        }
+      } else if (type === 'brick') {
+        name = 'Кирпичная кладка (16×16)';
+        const brickPals = ['#823326', '#993f2f', '#af4e3b', '#c45f49'];
+        const mortar = '#3a2824';
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            const row = Math.floor(y / 4);
+            const inRow = y % 4;
+            const shift = (row % 2) * 4;
+            const inCol = (x + shift) % 8;
+            if (inRow === 0 || inCol === 0) {
+              parsed[y * 16 + x] = mortar;
+            } else {
+              parsed[y * 16 + x] = brickPals[(x * 3 + y * 2) % brickPals.length];
+            }
+          }
+        }
+      } else if (type === 'planks') {
+        name = 'Дубовые доски (16×16)';
+        const plankPals = ['#715035', '#876242', '#9d744f', '#b3865d'];
+        const seam = '#3a2617';
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            if (y % 4 === 0) {
+              parsed[y * 16 + x] = seam;
+            } else {
+              parsed[y * 16 + x] = plankPals[(x * 5 + y * 3) % plankPals.length];
+            }
+          }
+        }
+      }
+
+      setReferenceData(parsed, name, '16×16 px');
+      showToast(`Пресет загружен: ${name}`);
+    }
+
+    function setupReferenceEvents() {
+      // Пипетка по клику на холст референса
+      const rCanvas = document.getElementById('refCanvas');
+      if (rCanvas) {
+        rCanvas.addEventListener('click', (e) => {
+          if (!refPixels) return;
+          const rect = rCanvas.getBoundingClientRect();
+          const rx = Math.floor(((e.clientX - rect.left) / rect.width) * 16);
+          const ry = Math.floor(((e.clientY - rect.top) / rect.height) * 16);
+          const x = Math.max(0, Math.min(15, rx));
+          const y = Math.max(0, Math.min(15, ry));
+          const color = refPixels[y * 16 + x];
+          if (color) {
+            setColor(color);
+            addRecentColor(color);
+            setTool('pencil');
+            showToast(`💧 Цвет с референса: ${color}`);
+          }
+        });
+      }
+
+      // Drag & drop
+      const dropzone = document.getElementById('refDropzone');
+      if (dropzone) {
+        dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropzone.classList.add('dragover');
+        });
+        dropzone.addEventListener('dragleave', () => {
+          dropzone.classList.remove('dragover');
+        });
+        dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('dragover');
+          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            loadReferenceFromFile(e.dataTransfer.files[0]);
+          }
+        });
+      }
     }
 
     window.onload = init;
