@@ -1240,6 +1240,9 @@ export function generateViewerHtml({
           </div>
         </div>
         <div class="nav-actions">
+          <a href="ore.html" class="btn btn-secondary" title="Генератор руды из текстуры камня">
+            💎 Ore generator
+          </a>
           <a href="painter.html" class="btn btn-secondary" title="Открыть редактор воксельных текстур 16×16">
             🎨 Voxel painter
           </a>

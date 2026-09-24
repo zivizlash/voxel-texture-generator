@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ore Generator — Генератор текстур руды 16×16</title>
+  <meta name="description" content="Генератор процедурных текстур руды со вкраплениями 16x16 из любой текстуры камня. 5 вариантов по сиду, настройка цвета, 3D куб и проверка тайлинга 3x3.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0e12;
+      --card-bg: #15161c;
+      --card-hover: #191b22;
+      --surface: #1d1e26;
+      --border: #2b2d38;
+      --border-focus: #38bdf8;
+      --text: #f0f2f8;
+      --text-dim: #9294a0;
+      --text-sub: #6e707c;
+      --accent: #0ea5e9;
+      --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #0284c7 45%, #6366f1 100%);
+      --accent-hover: #0284c7;
+      --accent-glow: rgba(14, 165, 233, 0.35);
+      --diamond-glow: rgba(77, 237, 240, 0.3);
+      --btn-bg: #1f212a;
+      --btn-hover: #292c37;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.09) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.07) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(77, 237, 240, 0.03) 0px, transparent 65%);
+      background-attachment: fixed;
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 0 0 50px 0;
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Навигационная панель */
+    .top-navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 14, 18, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+    }
+
+    .navbar-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      background: var(--accent-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Кнопки */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: 1px solid var(--border);
+      outline: none;
+      user-select: none;
+      white-space: nowrap;
+      text-decoration: none;
+      color: var(--text);
+      background: var(--btn-bg);
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: var(--btn-hover);
+      border-color: #4a4e61;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.12);
+      border-color: transparent;
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: #1a1b24;
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #232532;
+      border-color: #4a4e61;
+    }
+
+    .btn-tiny {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    /* Основной контейнер */
+    main {
+      max-width: 1440px;
+      margin: 24px auto 0 auto;
+      padding: 0 24px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Верхний блок: 2 колонки (Камень слева, Настройки справа) */
+    .deck-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 1060px) {
+      .deck-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 12px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-title .badge {
+      font-size: 11px;
+      background: rgba(14, 165, 233, 0.15);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Зона загрузки камня */
+    .dropzone {
+      border: 2px dashed #3a3d4f;
+      border-radius: var(--radius-md);
+      padding: 22px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      background: rgba(15, 17, 24, 0.6);
+      transition: all 0.2s ease;
+      text-align: center;
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: rgba(14, 165, 233, 0.08);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .dropzone-icon {
+      font-size: 32px;
+    }
+
+    .dropzone-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .dropzone-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Предпросмотр исходного камня */
+    .stone-preview-box {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #000;
+      border: 1px solid #3a3d4e;
+      border-radius: 6px;
+      overflow: hidden;
+      display: inline-flex;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    canvas.pixel-canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    .stone-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .stone-info-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .stone-info-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .preset-chips-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .preset-chips-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .preset-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-chip {
+      background: #1b1c25;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .preset-chip:hover {
+      background: #252836;
+      border-color: #555b74;
+      transform: translateY(-1px);
+    }
+
+    .preset-chip.active {
+      border-color: var(--accent);
+      background: rgba(14, 165, 233, 0.15);
+      color: #38bdf8;
+    }
+
+    /* Настройки руды (правая панель) */
+    .ore-controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .ore-controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-group {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .control-badge {
+      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #38bdf8;
+      background: rgba(14, 165, 233, 0.12);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    /* Пикер цвета */
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .color-input-wrapper {
+      position: relative;
+      width: 44px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      flex-shrink: 0;
+    }
+
+    .color-input-native {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 64px;
+      height: 60px;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+      background: none;
+    }
+
+    .hex-input {
+      background: #111218;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      width: 110px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .hex-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Палитра 5 оттенков руды */
+    .ore-palette-strip {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      margin-top: 4px;
+      background: #0f1015;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .palette-swatch-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    .palette-swatch {
+      width: 100%;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.4);
+      transition: transform 0.12s ease;
+    }
+
+    .palette-swatch:hover {
+      transform: scale(1.08);
+    }
+
+    .palette-swatch-label {
+      font-size: 9px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Пресеты минералов */
+    .mineral-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .mineral-chip {
+      background: #161822;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .mineral-chip:hover {
+      background: #212330;
+      border-color: #555c77;
+      transform: translateY(-1px);
+    }
+
+    .mineral-chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Слайдеры и селекты */
+    .custom-range {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #2a2c3a;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .custom-range::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-glow);
+      transition: transform 0.1s ease;
+    }
+
+    .custom-range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .custom-select {
+      background: #111218;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .custom-select:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Сид инпут */
+    .seed-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .seed-input {
+      background: #111218;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: #fff;
+      padding: 8px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      flex: 1;
+      outline: none;
+    }
+
+    .seed-input:focus {
+      border-color: var(--border-focus);
+    }
+
+    /* Секция с 5 вариантами */
+    .results-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 14px;
+    }
+
+    .results-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .results-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .variants-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 1200px) {
+      .variants-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (max-width: 760px) {
+      .variants-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .variants-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .variant-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .variant-card:hover {
+      border-color: #4a4e63;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+
+    .variant-card-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .variant-badge {
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #fff;
+      background: #252836;
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .variant-pattern-name {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .variant-canvas-box {
+      width: 144px;
+      height: 144px;
+      background: #000;
+      border: 1px solid #373a4b;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      transition: border-color 0.15s ease;
+    }
+
+    .variant-canvas-box:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+
+    .variant-canvas-box canvas {
+      width: 144px;
+      height: 144px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .variant-stats {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .variant-actions {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .variant-actions .btn {
+      flex: 1;
+    }
+
+    /* Модальное окно осмотра, тайлинга и 3D */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 9, 13, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #14151b;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      max-width: 920px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+      animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .modal-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .modal-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .modal-subhead {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* 3D Куб в модалке */
+    .cube-stage {
+      width: 100%;
+      height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #090a0f;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+      perspective: 800px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .cube-stage:active {
+      cursor: grabbing;
+    }
+
+    .voxel-cube {
+      width: 128px;
+      height: 128px;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-24deg) rotateY(45deg);
+      transition: transform 0.05s ease-out;
+    }
+
+    .cube-face {
+      position: absolute;
+      width: 128px;
+      height: 128px;
+      background: #000;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 1px solid rgba(0, 0, 0, 0.45);
+    }
+
+    .face-top {
+      transform: rotateX(90deg) translateZ(64px);
+      filter: brightness(1.08);
+    }
+
+    .face-front {
+      transform: rotateY(0deg) translateZ(64px);
+      filter: brightness(0.92);
+    }
+
+    .face-right {
+      transform: rotateY(90deg) translateZ(64px);
+      filter: brightness(0.78);
+    }
+
+    .face-bottom {
+      transform: rotateX(-90deg) translateZ(64px);
+      filter: brightness(0.70);
+    }
+
+    .face-left {
+      transform: rotateY(-90deg) translateZ(64px);
+      filter: brightness(0.85);
+    }
+
+    .face-back {
+      transform: rotateY(180deg) translateZ(64px);
+      filter: brightness(0.80);
+    }
+
+    /* 3x3 тайлинг холст */
+    .tiling-box {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      background: #090a0f;
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+      padding: 16px;
+    }
+
+    .tiling-canvas-wrap {
+      position: relative;
+      border: 1px solid #373a4b;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    #tilingCanvas {
+      width: 240px;
+      height: 240px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      display: block;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Тост уведомление */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #1e202a;
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      z-index: 2000;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <!-- Верхняя панель навигации -->
+  <header class="top-navbar">
+    <div class="navbar-container">
+      <div class="brand">
+        <div class="brand-icon">💎</div>
+        <div>
+          <h1>Ore Generator</h1>
+          <div class="brand-sub">Генератор текстур руды из текстуры камня • Процедурные вкрапления • 5 вариантов по сиду</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="painter.html" class="btn" title="Редактор воксельных текстур">
+          🎨 Voxel painter
+        </a>
+        <a href="normalizer.html" class="btn" title="Нормализация палитры и контраста текстур">
+          🪄 Texture normalizer
+        </a>
+        <a href="index.html" class="btn" title="Вернуться к генератору текстур">
+          ▦ Texture Generator
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Панель управления и входных данных (2 колонки) -->
+    <div class="deck-grid">
+      <!-- 1. Исходный камень -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🪨 Базовая текстура камня</span>
+            <span class="badge" id="stoneDimBadge">16×16 PNG</span>
+          </div>
+          <button type="button" class="btn btn-tiny btn-secondary" onclick="pasteFromClipboard()" title="Вставить изображение из буфера обмена">
+            📋 Вставить
+          </button>
+        </div>
+
+        <!-- Зона загрузки файла (Drag & Drop) -->
+        <label class="dropzone" id="stoneDropzone">
+          <div class="dropzone-icon">📁</div>
+          <div class="dropzone-text">Перетащите PNG текстуру камня сюда</div>
+          <div class="dropzone-hint">или нажмите для выбора файла (16×16 px)</div>
+          <input type="file" id="stoneFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(this)">
+        </label>
+
+        <!-- Превью активного камня -->
+        <div class="stone-preview-box">
+          <div class="canvas-wrapper">
+            <canvas id="stoneCanvas" width="16" height="16" class="pixel-canvas" style="width: 72px; height: 72px;"></canvas>
+          </div>
+          <div class="stone-info">
+            <div class="stone-info-title" id="stoneNameLabel">Камень (Stone)</div>
+            <div class="stone-info-sub" id="stoneDetailsLabel">256 пикселей • 6 оттенков</div>
+            <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">
+              Поверх этой породы будут сгенерированы вкрапления руды.
+            </div>
+          </div>
+        </div>
+
+        <!-- Пресеты образцов камня -->
+        <div class="preset-chips-wrap">
+          <div class="preset-chips-label">Быстрый выбор породы:</div>
+          <div class="preset-chips">
+            <button type="button" class="preset-chip active" id="chip_stone" onclick="selectStonePreset('stone')">
+              🪨 Камень
+            </button>
+            <button type="button" class="preset-chip" id="chip_deepslate" onclick="selectStonePreset('deepslate')">
+              🌑 Сланец
+            </button>
+            <button type="button" class="preset-chip" id="chip_andesite" onclick="selectStonePreset('andesite')">
+              ⛰️ Андезит
+            </button>
+            <button type="button" class="preset-chip" id="chip_granite" onclick="selectStonePreset('granite')">
+              🧱 Гранит
+            </button>
+            <button type="button" class="preset-chip" id="chip_diorite" onclick="selectStonePreset('diorite')">
+              🏛️ Диорит
+            </button>
+            <button type="button" class="preset-chip" id="chip_sandstone" onclick="selectStonePreset('sandstone')">
+              ⏳ Песчаник
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Параметры руды и генерации -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⚙️ Настройки вкраплений и сида</span>
+          </div>
+          <div class="actions-right" style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-tiny btn-primary" onclick="randomizeSeed()" title="Новый случайный сид (Горячая клавиша: R)">
+              🎲 Случайный сид
+            </button>
+          </div>
+        </div>
+
+        <div class="ore-controls-grid">
+          <!-- Группа цвета вкраплений -->
+          <div class="control-group">
+            <div class="control-header">
+              <span class="control-label">Цвет вкраплений</span>
+              <span class="control-badge" id="colorBadge">#4DEDF0</span>
+            </div>
+            
+            <div class="color-picker-row">
+              <div class="color-input-wrapper" title="Нажмите, чтобы выбрать цвет вкраплений">
+                <input type="color" id="oreColorInput" class="color-input-native" value="#4dedf0" oninput="onColorChange(this.value)">
+              </div>
+              <input type="text" id="oreHexInput" class="hex-input" value="#4DEDF0" maxlength="7" onchange="onHexChange(this.value)">
+              <span style="font-size: 11px; color: var(--text-dim); line-height: 1.2;">
+                Генерирует гармоничный 5-точечный спектр минерала (блик, свет, база, тень, контур).
+              </span>
+            </div>
+
+            <!-- Полоска сгенерированной палитры руды -->
+            <div class="ore-palette-strip" id="orePaletteStrip">
+              <!-- Заполняется динамически -->
+            </div>
+
+            <!-- Пресеты популярных руд -->
+            <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); margin-top: 4px;">Пресеты руд:</div>
+            <div class="mineral-chips">
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('diamond')">
+                <span class="dot" style="background: #4dedf0;"></span>Алмаз
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('gold')">
+                <span class="dot" style="background: #fce144;"></span>Золото
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('iron')">
+                <span class="dot" style="background: #d8af93;"></span>Железо
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('emerald')">
+                <span class="dot" style="background: #17dd62;"></span>Изумруд
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('redstone')">
+                <span class="dot" style="background: #ff2a2a;"></span>Редстоун
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('lapis')">
+                <span class="dot" style="background: #2258d4;"></span>Лазурит
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('copper')">
+                <span class="dot" style="background: #df784e;"></span>Медь
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('coal')">
+                <span class="dot" style="background: #333333;"></span>Уголь
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('amethyst')">
+                <span class="dot" style="background: #b757f5;"></span>Аметист
+              </button>
+              <button type="button" class="mineral-chip" onclick="applyOrePreset('ruby')">
+                <span class="dot" style="background: #e8175d;"></span>Рубин
+              </button>
+            </div>
+          </div>
+
+          <!-- Группа параметров генерации и сида -->
+          <div class="control-group">
+            <div class="control-header">
+              <span class="control-label">Сид генерации</span>
+              <span style="font-size: 11px; color: var(--text-dim);">Клавиша [R]</span>
+            </div>
+            
+            <div class="seed-row">
+              <input type="text" id="seedInput" class="seed-input" value="1337" oninput="onSeedInput(this.value)" placeholder="Число или строка...">
+              <button type="button" class="btn btn-secondary" onclick="randomizeSeed()" title="Сгенерировать случайный сид">
+                🎲
+              </button>
+            </div>
+
+            <!-- Стиль вкраплений -->
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+              <div class="control-header">
+                <label for="patternStyleSelect" class="control-label" style="font-size: 12px;">Стиль кристаллов/жил:</label>
+              </div>
+              <select id="patternStyleSelect" class="custom-select" onchange="regenerateAll()">
+                <option value="gems" selected>💎 Кристаллы / Огранка (Алмазы, Изумруды)</option>
+                <option value="nuggets">🏆 Самородки / Сгустки (Железо, Золото)</option>
+                <option value="veins">⚡ Жилы / Разломы (Лазурит, Медь)</option>
+                <option value="scattered">✨ Россыпь / Крупицы (Редстоун, Уголь)</option>
+              </select>
+            </div>
+
+            <!-- Слайдеры плотности и размера -->
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+              <div class="control-header">
+                <label for="densityRange" style="font-size: 12px; color: var(--text-dim);">Количество скоплений:</label>
+                <span class="control-badge" id="densityBadge">3 кластера</span>
+              </div>
+              <input type="range" id="densityRange" min="1" max="5" step="1" value="3" class="custom-range" oninput="document.getElementById('densityBadge').textContent = this.value + ' кластера'; regenerateAll();">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+              <div class="control-header">
+                <label for="sizeRange" style="font-size: 12px; color: var(--text-dim);">Размер жил:</label>
+                <span class="control-badge" id="sizeBadge">Средние</span>
+              </div>
+              <input type="range" id="sizeRange" min="1" max="4" step="1" value="2" class="custom-range" oninput="updateSizeBadge(this.value); regenerateAll();">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 4px;">
+              <div class="control-header">
+                <label for="cavityRange" style="font-size: 12px; color: var(--text-dim);">Углубление в камне (AO):</label>
+                <span class="control-badge" id="cavityBadge">70%</span>
+              </div>
+              <input type="range" id="cavityRange" min="0" max="100" step="5" value="70" class="custom-range" oninput="document.getElementById('cavityBadge').textContent = this.value + '%'; regenerateAll();">
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              <label for="wrapCheck" style="font-size: 12px; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="wrapCheck" checked onchange="regenerateAll()">
+                Бесшовность тайлинга (Toroidal Wrap)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Секция результатов: 5 вариантов по сиду -->
+    <div class="results-section">
+      <div class="results-header">
+        <div class="results-title-group">
+          <div class="results-title">✨ 5 сгенерированных вариантов руды</div>
+          <span class="badge" id="currentSeedBadge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); padding: 3px 8px; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+            Сид: 1337
+          </span>
+        </div>
+        <div class="actions-right" style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary" onclick="exportAtlasStrip()" title="Скачать единую полосу со всеми 5 вариантами (80×16 PNG)">
+            🗺️ Атлас 5 вариантов (80×16)
+          </button>
+          <button type="button" class="btn btn-primary" onclick="downloadAllVariants()" title="Скачать 5 отдельных PNG файлов">
+            ⬇ Скачать все 5 (.png)
+          </button>
+        </div>
+      </div>
+
+      <!-- Сетка 5 вариантов -->
+      <div class="variants-grid" id="variantsContainer">
+        <!-- 5 карточек вариантов рендерятся динамически -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Модальное окно осмотра, тайлинга и 3D -->
+  <div class="modal-overlay" id="inspectModal" onclick="closeModalOnOverlay(event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span id="modalTitleText">Осмотр варианта руды #1</span>
+          <span class="badge" id="modalBadge" style="font-size: 11px; background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); padding: 2px 7px; border-radius: 4px;">16×16 px</span>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal()" title="Закрыть (Esc)">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Левая колонка: 3x3 тайлинг -->
+        <div class="modal-column">
+          <div class="modal-subhead">
+            <span>▦ Проверка тайлинга (Сетка 3×3)</span>
+          </div>
+          <div class="tiling-box">
+            <div class="tiling-canvas-wrap">
+              <canvas id="tilingCanvas" width="48" height="48"></canvas>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; margin-top: 4px;">
+              <label style="font-size: 11px; color: var(--text-dim); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                <input type="checkbox" id="tilingGridCheck" checked onchange="drawTilingGrid()">
+                Показать границы блоков 16×16
+              </label>
+            </div>
+            <div style="font-size: 11px; color: var(--text-sub); text-align: center;">
+              Проверьте бесшовность: кристаллы и порода идеально сходятся на стыках тайлов без швов и артефактов.
+            </div>
+          </div>
+        </div>
+
+        <!-- Правая колонка: 3D куб -->
+        <div class="modal-column">
+          <div class="modal-subhead">
+            <span>🧊 Интерактивный 3D Воксельный куб</span>
+          </div>
+          <div class="cube-stage" id="modalCubeStage" title="Зажмите ЛКМ и двигайте курсор для свободного вращения">
+            <div class="voxel-cube" id="modalCube">
+              <canvas class="cube-face face-top" id="cubeFaceTop" width="16" height="16"></canvas>
+              <canvas class="cube-face face-front" id="cubeFaceFront" width="16" height="16"></canvas>
+              <canvas class="cube-face face-right" id="cubeFaceRight" width="16" height="16"></canvas>
+              <canvas class="cube-face face-bottom" id="cubeFaceBottom" width="16" height="16"></canvas>
+              <canvas class="cube-face face-left" id="cubeFaceLeft" width="16" height="16"></canvas>
+              <canvas class="cube-face face-back" id="cubeFaceBack" width="16" height="16"></canvas>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; width: 100%;">
+            <button type="button" class="btn btn-tiny btn-secondary" onclick="setModalCubeAngle('iso')">📐 Изометрия</button>
+            <button type="button" class="btn btn-tiny btn-secondary" onclick="setModalCubeAngle('front')">🟦 Фас</button>
+            <button type="button" class="btn btn-tiny btn-secondary" onclick="setModalCubeAngle('top')">⬆ Верх</button>
+            <button type="button" class="btn btn-tiny btn-secondary" id="cubeModeToggleBtn" onclick="toggleCubeTextureMode()">
+              Сменить режим граней
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="copyCurrentModalImage()">
+          📋 Скопировать PNG
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="openCurrentInPainter()">
+          🎨 Открыть в Voxel Painter
+        </button>
+        <button type="button" class="btn btn-primary" onclick="downloadCurrentModalVariant()">
+          ⬇ Скачать этот вариант (.png)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Плавающее тост-уведомление -->
+  <div id="toast" class="toast">✓ Готово</div>
+
+  <script>
+    // --- 1. Детерминированный PRNG Mulberry32 ---
+    class PRNG {
+      constructor(seed = 1337) {
+        this.initialSeed = typeof seed === 'string' ? PRNG.hashString(seed) : (seed >>> 0);
+        this.state = this.initialSeed;
+      }
+      static hashString(str) {
+        let hash = 0;
+        const s = String(str);
+        for (let i = 0; i < s.length; i++) {
+          hash = (Math.imul(31, hash) + s.charCodeAt(i)) >>> 0;
+        }
+        return hash;
+      }
+      next() {
+        let t = (this.state += 0x6D2B79F5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+      range(min, max) { return min + this.next() * (max - min); }
+      int(min, max) { return Math.floor(this.range(min, max + 1)); }
+      choice(arr) { if (!arr || arr.length === 0) return null; return arr[this.int(0, arr.length - 1)]; }
+      chance(p) { return this.next() < p; }
+      fork(offset = 0) { return new PRNG((this.state + offset + 0x9E3779B9) >>> 0); }
+    }
+
+    // --- 2. Цветовые утилиты и палитра ---
+    function hexToRgb(hex) {
+      let c = hex.replace('#', '').trim();
+      if (c.length === 3) c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+      const num = parseInt(c, 16) || 0;
+      return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255,
+        a: 255
+      };
+    }
+
+    function rgbToHex(r, g, b) {
+      const h = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+      return '#' + h(r) + h(g) + h(b);
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h = 0, s = 0, l = (max + min) / 2;
+
+      if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return { h: h * 360, s: s * 100, l: l * 100 };
+    }
+
+    function hslToRgb(h, s, l) {
+      h /= 360; s /= 100; l /= 100;
+      let r, g, b;
+
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255),
+        a: 255
+      };
+    }
+
+    // Построение 5-точечной гармоничной палитры руды (Блик, Свет, База, Тень, Контур)
+    function buildMineralPalette(baseHex) {
+      const baseRgb = hexToRgb(baseHex);
+      const hsl = rgbToHsl(baseRgb.r, baseRgb.g, baseRgb.b);
+
+      // Блик (Glint / Highlight): очень светлый пастельный отблеск
+      const glintL = Math.min(97, hsl.l + 32);
+      const glintS = Math.max(12, hsl.s * 0.65);
+      const glint = hslToRgb(hsl.h, glintS, glintL);
+
+      // Свет (Light): освещенная верхняя грань
+      const lightL = Math.min(88, hsl.l + 16);
+      const lightS = Math.min(100, hsl.s * 1.05);
+      const light = hslToRgb(hsl.h, lightS, lightL);
+
+      // База (Base): выбранный цвет
+      const base = baseRgb;
+
+      // Тень (Shadow): нижняя грань со смещением спектра
+      const shadowL = Math.max(12, hsl.l - 18);
+      const shadowS = Math.min(100, hsl.s * 1.08);
+      const shadowH = (hsl.h + 4) % 360;
+      const shadow = hslToRgb(shadowH, shadowS, shadowL);
+
+      // Контур / Разлом (Dark): глубокая тень и темный кристаллический край
+      const darkL = Math.max(6, hsl.l - 34);
+      const darkS = Math.min(100, hsl.s * 1.15);
+      const darkH = (hsl.h + 6) % 360;
+      const dark = hslToRgb(darkH, darkS, darkL);
+
+      return { glint, light, base, shadow, dark };
+    }
+
+    // Пресеты известных руд
+    const ORE_PRESETS = {
+      diamond: { hex: '#4dedf0', style: 'gems', name: 'Алмаз' },
+      gold: { hex: '#fce144', style: 'nuggets', name: 'Золото' },
+      iron: { hex: '#d8af93', style: 'nuggets', name: 'Железо' },
+      emerald: { hex: '#17dd62', style: 'gems', name: 'Изумруд' },
+      redstone: { hex: '#ff2a2a', style: 'scattered', name: 'Редстоун' },
+      lapis: { hex: '#2258d4', style: 'veins', name: 'Лазурит' },
+      copper: { hex: '#df784e', style: 'veins', name: 'Медь' },
+      coal: { hex: '#2c2c2c', style: 'scattered', name: 'Уголь' },
+      amethyst: { hex: '#b757f5', style: 'gems', name: 'Аметист' },
+      ruby: { hex: '#e8175d', style: 'gems', name: 'Рубин' }
+    };
+
+    // --- 3. Встроенные процедурные пресеты камня ---
+    function generateProceduralStone(type = 'stone') {
+      const prng = new PRNG(1337);
+      const grid = new Array(256);
+
+      // Базовые палитры для пород
+      let baseTones;
+      if (type === 'deepslate') {
+        baseTones = ['#212126', '#2d2d34', '#393941', '#474751', '#545460', '#636371'].map(hexToRgb);
+      } else if (type === 'granite') {
+        baseTones = ['#66433a', '#7b5247', '#8f6256', '#a27266', '#b38175', '#c49286'].map(hexToRgb);
+      } else if (type === 'andesite') {
+        baseTones = ['#505052', '#616164', '#737376', '#848488', '#96969a', '#a7a7ab'].map(hexToRgb);
+      } else if (type === 'diorite') {
+        baseTones = ['#868688', '#9c9c9f', '#b0b0b3', '#c5c5c8', '#d8d8db', '#ebebef'].map(hexToRgb);
+      } else if (type === 'sandstone') {
+        baseTones = ['#b8a472', '#c8b582', '#d5c392', '#dfd0a2', '#ebdcb3', '#f6e8c4'].map(hexToRgb);
+      } else {
+        // stone
+        baseTones = ['#474747', '#585858', '#6b6b6b', '#7d7d7d', '#8f8f8f', '#a1a1a1', '#b3b3b3'].map(hexToRgb);
+      }
+
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          // Создаем органичный рельеф камня
+          let noise = (Math.sin(x * 0.8) + Math.cos(y * 0.8)) * 0.25;
+          noise += ((x * 7 + y * 13) % 11 - 5) * 0.04;
+          noise += prng.range(-0.15, 0.15);
+
+          // Для сланца и песчаника добавляем горизонтальные волны
+          if (type === 'deepslate' || type === 'sandstone') {
+            noise += Math.sin(y * 1.2) * 0.2;
+          }
+
+          let t = (noise + 0.5);
+          t = Math.max(0, Math.min(0.999, t));
+          const idx = Math.floor(t * baseTones.length);
+          let col = { ...baseTones[idx] };
+
+          // Микро-акценты диорита/гранита
+          if (type === 'diorite' && prng.chance(0.18)) {
+            col = { r: 55, g: 55, b: 58, a: 255 };
+          } else if (type === 'granite' && prng.chance(0.14)) {
+            col = { r: 215, g: 170, b: 160, a: 255 };
+          }
+
+          grid[y * 16 + x] = col;
+        }
+      }
+      return grid;
+    }
+
+    // --- 4. Состояние приложения ---
+    let currentStonePixels = generateProceduralStone('stone');
+    let currentStoneName = 'Камень (Stone)';
+    let currentStoneType = 'stone';
+
+    let currentSeed = 1337;
+    let currentOreColor = '#4dedf0';
+    let currentPalette = buildMineralPalette('#4dedf0');
+
+    // Сгенерированные 5 вариантов: массив объектов { pixels, clustersCount, orePixelsCount, patternName }
+    let generatedVariants = [];
+
+    // Состояние модального окна
+    let activeModalVariantIndex = 0;
+    let modalCubeRotation = { x: -24, y: 45 };
+    let cubeTextureMode = 'all_ore'; // 'all_ore' или 'stone_top_bottom'
+
+    // --- 5. Алгоритм генерации вкраплений руды ---
+    function generateOreVariant(basePixels, prng, variantIdx, options) {
+      const {
+        palette,
+        style = 'gems',
+        density = 3,
+        size = 2,
+        cavityDepth = 0.7,
+        toroidalWrap = true
+      } = options;
+
+      // Клонируем базовую породу
+      const output = basePixels.map(p => ({ ...p }));
+      const oreGrid = Array.from({ length: 16 }, () => Array(16).fill(null));
+
+      // Количество кластеров
+      const minClusters = Math.max(1, density - 1);
+      const maxClusters = Math.min(5, density + 1);
+      const clusterCount = prng.int(minClusters, maxClusters);
+
+      // Диапазоны размеров
+      const sizeRanges = [
+        [2, 4],   // 1: мелкие
+        [4, 7],   // 2: средние
+        [7, 11],  // 3: крупные
+        [10, 15]  // 4: массивные
+      ];
+      const [minPx, maxPx] = sizeRanges[size - 1] || [4, 7];
+
+      const clusters = [];
+      const placedCenters = [];
+
+      // Характеристики паттерна для каждого варианта
+      const variantArchetypes = [
+        { name: 'Двойной кристалл', bias: 'diag' },
+        { name: 'Диагональная жила', bias: 'vein' },
+        { name: 'Центральное гнездо', bias: 'center' },
+        { name: 'Тройная россыпь', bias: 'scatter' },
+        { name: 'Ступенчатый разлом', bias: 'step' }
+      ];
+      const archetype = variantArchetypes[variantIdx % variantArchetypes.length];
+
+      for (let c = 0; c < clusterCount; c++) {
+        let cx = 0, cy = 0;
+        let bestDist = -1;
+
+        for (let attempt = 0; attempt < 20; attempt++) {
+          let candX = prng.int(1, 14);
+          let candY = prng.int(1, 14);
+
+          if (archetype.bias === 'center' && c === 0) {
+            candX = prng.int(6, 9);
+            candY = prng.int(6, 9);
+          }
+
+          let minDist = 999;
+          for (const pt of placedCenters) {
+            let dx = Math.abs(candX - pt.x);
+            let dy = Math.abs(candY - pt.y);
+            if (toroidalWrap) {
+              dx = Math.min(dx, 16 - dx);
+              dy = Math.min(dy, 16 - dy);
+            }
+            const dist = Math.hypot(dx, dy);
+            if (dist < minDist) minDist = dist;
+          }
+          if (minDist > bestDist) {
+            bestDist = minDist;
+            cx = candX;
+            cy = candY;
+          }
+          if (minDist >= 5) break;
+        }
+
+        placedCenters.push({ x: cx, y: cy });
+
+        const targetClusterPx = prng.int(minPx, maxPx);
+        const clusterPixels = [{ x: cx, y: cy }];
+        oreGrid[cy][cx] = { clusterIdx: c };
+
+        let dirX = prng.choice([-1, 1]);
+        let dirY = prng.choice([-1, 1]);
+        if (style === 'veins' || archetype.bias === 'vein') {
+          dirX = 1; dirY = 1;
+        }
+
+        const frontier = [];
+        function addNeighbors(px, py) {
+          const dirs = [
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 },
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 },
+            { dx: -1, dy: -1 },
+            { dx: 1, dy: -1 },
+            { dx: -1, dy: 1 },
+            { dx: 1, dy: 1 }
+          ];
+          for (const d of dirs) {
+            let nx = px + d.dx;
+            let ny = py + d.dy;
+            if (toroidalWrap) {
+              nx = (nx + 16) % 16;
+              ny = (ny + 16) % 16;
+            } else {
+              if (nx < 0 || nx >= 16 || ny < 0 || ny >= 16) continue;
+            }
+            if (!oreGrid[ny][nx] && !frontier.some(f => f.x === nx && f.y === ny)) {
+              let weight = 1.0;
+              const isDiag = Math.abs(d.dx) + Math.abs(d.dy) === 2;
+              if (style === 'gems') {
+                weight = isDiag ? 0.35 : 1.3;
+              } else if (style === 'nuggets') {
+                weight = isDiag ? 0.8 : 1.0;
+              } else if (style === 'veins') {
+                if ((d.dx === dirX && d.dy === dirY) || (d.dx === -dirX && d.dy === -dirY)) {
+                  weight = 3.5;
+                } else if (isDiag) {
+                  weight = 1.2;
+                } else {
+                  weight = 0.5;
+                }
+              } else if (style === 'scattered') {
+                weight = isDiag ? 1.5 : 0.8;
+              }
+              frontier.push({ x: nx, y: ny, weight });
+            }
+          }
+        }
+
+        addNeighbors(cx, cy);
+
+        while (clusterPixels.length < targetClusterPx && frontier.length > 0) {
+          const totalWeight = frontier.reduce((acc, f) => acc + f.weight, 0);
+          let randVal = prng.range(0, totalWeight);
+          let chosenIdx = 0;
+          for (let i = 0; i < frontier.length; i++) {
+            randVal -= frontier[i].weight;
+            if (randVal <= 0) {
+              chosenIdx = i;
+              break;
+            }
+          }
+          const chosen = frontier.splice(chosenIdx, 1)[0];
+          clusterPixels.push({ x: chosen.x, y: chosen.y });
+          oreGrid[chosen.y][chosen.x] = { clusterIdx: c };
+          addNeighbors(chosen.x, chosen.y);
+        }
+
+        clusters.push(clusterPixels);
+      }
+
+      // Назначение светотени каждому пикселю руды (Солнце сверху-слева)
+      for (const cluster of clusters) {
+        let minScore = 999;
+        let apexPixel = cluster[0];
+
+        for (const pt of cluster) {
+          const score = pt.y * 1.5 + pt.x * 1.0 + prng.range(-0.4, 0.4);
+          if (score < minScore) {
+            minScore = score;
+            apexPixel = pt;
+          }
+        }
+
+        for (const pt of cluster) {
+          const { x, y } = pt;
+          const getAt = (ox, oy) => {
+            let qx = x + ox;
+            let qy = y + oy;
+            if (toroidalWrap) {
+              qx = (qx + 16) % 16;
+              qy = (qy + 16) % 16;
+            } else if (qx < 0 || qx >= 16 || qy < 0 || qy >= 16) {
+              return false;
+            }
+            return oreGrid[qy][qx] !== null;
+          };
+
+          const top = getAt(0, -1);
+          const left = getAt(-1, 0);
+          const bottom = getAt(0, 1);
+          const right = getAt(1, 0);
+
+          let shade = 'base';
+          const isApex = (pt.x === apexPixel.x && pt.y === apexPixel.y);
+
+          if (isApex) {
+            shade = 'glint';
+          } else if (!top && !left) {
+            shade = prng.chance(0.4) ? 'glint' : 'light';
+          } else if (!top || !left) {
+            shade = prng.chance(0.7) ? 'light' : 'base';
+          } else if (!bottom && !right) {
+            shade = prng.chance(0.65) ? 'dark' : 'shadow';
+          } else if (!bottom || !right) {
+            shade = prng.chance(0.7) ? 'shadow' : 'base';
+          } else {
+            shade = 'base';
+          }
+
+          if (cluster.length >= 5 && shade === 'light' && prng.chance(0.25)) {
+            shade = 'glint';
+          }
+
+          oreGrid[y][x].shade = shade;
+        }
+      }
+
+      // Затемнение породы вокруг руды (Контактное углубление / Ambient Occlusion)
+      if (cavityDepth > 0) {
+        for (let y = 0; y < 16; y++) {
+          for (let x = 0; x < 16; x++) {
+            if (oreGrid[y][x] !== null) continue;
+
+            const getOreAt = (ox, oy) => {
+              let qx = x + ox;
+              let qy = y + oy;
+              if (toroidalWrap) {
+                qx = (qx + 16) % 16;
+                qy = (qy + 16) % 16;
+              } else if (qx < 0 || qx >= 16 || qy < 0 || qy >= 16) {
+                return false;
+              }
+              return oreGrid[qy][qx] !== null;
+            };
+
+            const hasOreAbove = getOreAt(0, -1);
+            const hasOreLeft = getOreAt(-1, 0);
+            const hasOreTopLeft = getOreAt(-1, -1);
+
+            let shadow = 0;
+            if (hasOreAbove && hasOreLeft) {
+              shadow = 0.35 * cavityDepth;
+            } else if (hasOreAbove || hasOreLeft) {
+              shadow = 0.22 * cavityDepth;
+            } else if (hasOreTopLeft) {
+              shadow = 0.12 * cavityDepth;
+            }
+
+            if (shadow > 0) {
+              const idx = y * 16 + x;
+              const orig = output[idx];
+              output[idx] = {
+                r: Math.max(0, Math.round(orig.r * (1 - shadow))),
+                g: Math.max(0, Math.round(orig.g * (1 - shadow))),
+                b: Math.max(0, Math.round(orig.b * (1 - shadow))),
+                a: orig.a
+              };
+            }
+          }
+        }
+      }
+
+      // Перенос пикселей руды на холст
+      let totalOrePixels = 0;
+      for (let y = 0; y < 16; y++) {
+        for (let x = 0; x < 16; x++) {
+          const ore = oreGrid[y][x];
+          if (ore) {
+            totalOrePixels++;
+            const col = palette[ore.shade] || palette.base;
+            output[y * 16 + x] = { ...col };
+          }
+        }
+      }
+
+      return {
+        pixels: output,
+        clustersCount: clusters.length,
+        orePixelsCount: totalOrePixels,
+        patternName: archetype.name
+      };
+    }
+
+    // --- 6. Рендеринг в холсты ---
+    function drawPixelGridToCanvas(canvas, pixels, w = 16, h = 16) {
+      const ctx = canvas.getContext('2d');
+      const imgData = ctx.createImageData(w, h);
+      for (let i = 0; i < w * h; i++) {
+        const p = pixels[i] || { r: 0, g: 0, b: 0, a: 255 };
+        imgData.data[i * 4] = p.r;
+        imgData.data[i * 4 + 1] = p.g;
+        imgData.data[i * 4 + 2] = p.b;
+        imgData.data[i * 4 + 3] = p.a !== undefined ? p.a : 255;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // --- 7. Запуск генерации всех 5 вариантов ---
+    function regenerateAll() {
+      const seedInput = document.getElementById('seedInput');
+      const seedVal = seedInput ? seedInput.value.trim() : '1337';
+      currentSeed = seedVal;
+
+      const styleSelect = document.getElementById('patternStyleSelect');
+      const style = styleSelect ? styleSelect.value : 'gems';
+
+      const densityRange = document.getElementById('densityRange');
+      const density = densityRange ? parseInt(densityRange.value, 10) : 3;
+
+      const sizeRange = document.getElementById('sizeRange');
+      const size = sizeRange ? parseInt(sizeRange.value, 10) : 2;
+
+      const cavityRange = document.getElementById('cavityRange');
+      const cavityDepth = cavityRange ? parseInt(cavityRange.value, 10) / 100 : 0.7;
+
+      const wrapCheck = document.getElementById('wrapCheck');
+      const toroidalWrap = wrapCheck ? wrapCheck.checked : true;
+
+      const baseSeedNum = PRNG.hashString(currentSeed);
+      generatedVariants = [];
+
+      for (let v = 1; v <= 5; v++) {
+        // Детерминированный суб-сид для каждого из 5 вариантов
+        const subSeed = (baseSeedNum + v * 99991 + (v * v) * 31) >>> 0;
+        const prng = new PRNG(subSeed);
+
+        const res = generateOreVariant(currentStonePixels, prng, v - 1, {
+          palette: currentPalette,
+          style,
+          density,
+          size,
+          cavityDepth,
+          toroidalWrap
+        });
+
+        generatedVariants.push({
+          index: v,
+          pixels: res.pixels,
+          clustersCount: res.clustersCount,
+          orePixelsCount: res.orePixelsCount,
+          patternName: res.patternName
+        });
+      }
+
+      renderVariantCards();
+
+      // Обновляем бейдж сида
+      const seedBadge = document.getElementById('currentSeedBadge');
+      if (seedBadge) seedBadge.textContent = 'Сид: ' + currentSeed;
+
+      // Отрисовываем исходный камень
+      const stoneCanvas = document.getElementById('stoneCanvas');
+      if (stoneCanvas) drawPixelGridToCanvas(stoneCanvas, currentStonePixels);
+    }
+
+    // Рендеринг карточек вариантов
+    function renderVariantCards() {
+      const container = document.getElementById('variantsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      generatedVariants.forEach((v, idx) => {
+        const card = document.createElement('div');
+        card.className = 'variant-card';
+
+        const pct = Math.round((v.orePixelsCount / 256) * 100);
+
+        card.innerHTML = `
+          <div class="variant-card-header">
+            <span class="variant-badge">#${v.index}</span>
+            <span class="variant-pattern-name">${v.patternName}</span>
+          </div>
+          <div class="variant-canvas-box" onclick="inspectVariant(${idx})" title="Нажмите для 3D просмотра и проверки тайлинга 3×3">
+            <canvas id="variantCanvas_${v.index}" width="16" height="16"></canvas>
+          </div>
+          <div class="variant-stats">
+            ${v.clustersCount} жилы • ${v.orePixelsCount} px (${pct}%)
+          </div>
+          <div class="variant-actions">
+            <button type="button" class="btn btn-tiny btn-secondary" onclick="inspectVariant(${idx})" title="Осмотреть в 3D и проверить стыковку">
+              🔍 3D
+            </button>
+            <button type="button" class="btn btn-tiny btn-primary" onclick="downloadVariant(${v.index})" title="Скачать этот вариант в PNG">
+              ⬇ PNG
+            </button>
+          </div>
+        `;
+
+        container.appendChild(card);
+
+        // Отрисовка холста варианта
+        const c = document.getElementById(`variantCanvas_${v.index}`);
+        if (c) drawPixelGridToCanvas(c, v.pixels);
+      });
+    }
+
+    // --- 8. Обработка цветов и палитры ---
+    function onColorChange(hex) {
+      currentOreColor = hex;
+      const hexInput = document.getElementById('oreHexInput');
+      if (hexInput) hexInput.value = hex.toUpperCase();
+      const badge = document.getElementById('colorBadge');
+      if (badge) badge.textContent = hex.toUpperCase();
+
+      currentPalette = buildMineralPalette(hex);
+      renderPaletteStrip();
+      regenerateAll();
+    }
+
+    function onHexChange(hex) {
+      if (!hex.startsWith('#')) hex = '#' + hex;
+      if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        currentOreColor = hex;
+        const colInput = document.getElementById('oreColorInput');
+        if (colInput) colInput.value = hex;
+        const badge = document.getElementById('colorBadge');
+        if (badge) badge.textContent = hex.toUpperCase();
+
+        currentPalette = buildMineralPalette(hex);
+        renderPaletteStrip();
+        regenerateAll();
+      }
+    }
+
+    function applyOrePreset(presetKey) {
+      const preset = ORE_PRESETS[presetKey];
+      if (!preset) return;
+
+      const colInput = document.getElementById('oreColorInput');
+      if (colInput) colInput.value = preset.hex;
+      const hexInput = document.getElementById('oreHexInput');
+      if (hexInput) hexInput.value = preset.hex.toUpperCase();
+      const badge = document.getElementById('colorBadge');
+      if (badge) badge.textContent = preset.hex.toUpperCase();
+
+      const styleSelect = document.getElementById('patternStyleSelect');
+      if (styleSelect) styleSelect.value = preset.style;
+
+      currentOreColor = preset.hex;
+      currentPalette = buildMineralPalette(preset.hex);
+      renderPaletteStrip();
+      regenerateAll();
+      showToast(`Применен пресет: ${preset.name}`);
+    }
+
+    function renderPaletteStrip() {
+      const strip = document.getElementById('orePaletteStrip');
+      if (!strip) return;
+      strip.innerHTML = '';
+
+      const items = [
+        { key: 'glint', label: 'Блик' },
+        { key: 'light', label: 'Свет' },
+        { key: 'base', label: 'База' },
+        { key: 'shadow', label: 'Тень' },
+        { key: 'dark', label: 'Контур' }
+      ];
+
+      items.forEach(it => {
+        const rgb = currentPalette[it.key];
+        const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+        const box = document.createElement('div');
+        box.className = 'palette-swatch-box';
+        box.title = `${it.label}: ${hex}`;
+        box.innerHTML = `
+          <div class="palette-swatch" style="background: ${hex};"></div>
+          <span class="palette-swatch-label">${it.label}</span>
+        `;
+        strip.appendChild(box);
+      });
+    }
+
+    function updateSizeBadge(val) {
+      const names = ['Мелкие (2-4 px)', 'Средние (4-7 px)', 'Крупные (7-11 px)', 'Массивные (10-15 px)'];
+      const badge = document.getElementById('sizeBadge');
+      if (badge) badge.textContent = names[parseInt(val, 10) - 1] || 'Средние';
+    }
+
+    // --- 9. Обработка сида ---
+    function onSeedInput(val) {
+      regenerateAll();
+    }
+
+    function randomizeSeed() {
+      const newSeed = Math.floor(Math.random() * 900000 + 100000);
+      const seedInput = document.getElementById('seedInput');
+      if (seedInput) seedInput.value = String(newSeed);
+      regenerateAll();
+      showToast(`🎲 Новый сид: ${newSeed}`);
+    }
+
+    // --- 10. Пресеты камня и загрузка PNG ---
+    function selectStonePreset(type) {
+      currentStoneType = type;
+      document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+      const chip = document.getElementById(`chip_${type}`);
+      if (chip) chip.classList.add('active');
+
+      const names = {
+        stone: 'Камень (Stone)',
+        deepslate: 'Глубинный сланец (Deepslate)',
+        andesite: 'Андезит (Andesite)',
+        granite: 'Гранит (Granite)',
+        diorite: 'Диорит (Diorite)',
+        sandstone: 'Песчаник (Sandstone)'
+      };
+      currentStoneName = names[type] || 'Камень';
+      const label = document.getElementById('stoneNameLabel');
+      if (label) label.textContent = currentStoneName;
+
+      currentStonePixels = generateProceduralStone(type);
+      regenerateAll();
+      showToast(`🪨 Выбрана порода: ${currentStoneName}`);
+    }
+
+    function handleFileSelect(input) {
+      if (!input.files || input.files.length === 0) return;
+      loadStoneFromFile(input.files[0]);
+      input.value = '';
+    }
+
+    function loadStoneFromFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Пожалуйста, выберите изображение (.png, .jpg)');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          // Рисуем на временный холст 16x16 без сглаживания
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = 16;
+          tempCanvas.height = 16;
+          const ctx = tempCanvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, 0, 0, 16, 16);
+
+          const imgData = ctx.getImageData(0, 0, 16, 16);
+          const data = imgData.data;
+          const newPixels = new Array(256);
+
+          for (let i = 0; i < 256; i++) {
+            newPixels[i] = {
+              r: data[i * 4],
+              g: data[i * 4 + 1],
+              b: data[i * 4 + 2],
+              a: data[i * 4 + 3]
+            };
+          }
+
+          currentStonePixels = newPixels;
+          currentStoneName = file.name;
+          currentStoneType = 'custom';
+
+          document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+
+          const nameLabel = document.getElementById('stoneNameLabel');
+          if (nameLabel) nameLabel.textContent = file.name;
+
+          const detailsLabel = document.getElementById('stoneDetailsLabel');
+          if (detailsLabel) detailsLabel.textContent = `${img.width}×${img.height} px ➔ 16×16`;
+
+          regenerateAll();
+          showToast(`📁 Текстура камня загружена (${file.name})`);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Вставка из буфера обмена
+    async function pasteFromClipboard() {
+      try {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+          for (const type of item.types) {
+            if (type.startsWith('image/')) {
+              const blob = await item.getType(type);
+              loadStoneFromFile(blob);
+              return;
+            }
+          }
+        }
+        showToast('В буфере обмена нет изображения');
+      } catch (err) {
+        showToast('Нажмите Ctrl+V или предоставьте разрешение буфера');
+      }
+    }
+
+    // Drag and Drop для зоны загрузки
+    const dropzone = document.getElementById('stoneDropzone');
+    if (dropzone) {
+      dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+      dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+      });
+      dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          loadStoneFromFile(e.dataTransfer.files[0]);
+        }
+      });
+      dropzone.addEventListener('click', () => {
+        const fileInput = document.getElementById('stoneFileInput');
+        if (fileInput) fileInput.click();
+      });
+    }
+
+    // Глобальная вставка по Ctrl+V
+    window.addEventListener('paste', (e) => {
+      if (e.clipboardData && e.clipboardData.files.length > 0) {
+        const file = e.clipboardData.files[0];
+        if (file.type.startsWith('image/')) {
+          loadStoneFromFile(file);
+        }
+      }
+    });
+
+    // Горячая клавиша R для смены сида
+    window.addEventListener('keydown', (e) => {
+      if ((e.key === 'r' || e.key === 'к' || e.key === 'R' || e.key === 'К') && document.activeElement !== document.getElementById('seedInput') && document.activeElement !== document.getElementById('oreHexInput')) {
+        randomizeSeed();
+      }
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    // --- 11. Экспорт и скачивание ---
+    function downloadVariant(varIndex) {
+      const v = generatedVariants.find(item => item.index === varIndex);
+      if (!v) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 16;
+      tempCanvas.height = 16;
+      drawPixelGridToCanvas(tempCanvas, v.pixels);
+
+      const link = document.createElement('a');
+      link.download = `ore_texture_${currentSeed}_var${v.index}.png`;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+      showToast(`💾 Вариант #${v.index} скачан`);
+    }
+
+    function downloadAllVariants() {
+      generatedVariants.forEach((v, idx) => {
+        setTimeout(() => downloadVariant(v.index), idx * 200);
+      });
+      showToast(`💾 Скачивание всех 5 вариантов...`);
+    }
+
+    // Экспорт горизонтальной полосы атласа 80x16
+    function exportAtlasStrip() {
+      const atlasCanvas = document.createElement('canvas');
+      atlasCanvas.width = 16 * 5;
+      atlasCanvas.height = 16;
+      const ctx = atlasCanvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+
+      generatedVariants.forEach((v, idx) => {
+        const tileCanvas = document.createElement('canvas');
+        tileCanvas.width = 16;
+        tileCanvas.height = 16;
+        drawPixelGridToCanvas(tileCanvas, v.pixels);
+        ctx.drawImage(tileCanvas, idx * 16, 0);
+      });
+
+      const link = document.createElement('a');
+      link.download = `ore_strip_5var_seed_${currentSeed}.png`;
+      link.href = atlasCanvas.toDataURL('image/png');
+      link.click();
+      showToast(`🗺️ Атлас 5 вариантов (80×16) скачан`);
+    }
+
+    // --- 12. Модальное окно (3x3 Тайлинг и 3D Куб) ---
+    function inspectVariant(idx) {
+      activeModalVariantIndex = idx;
+      const v = generatedVariants[idx];
+      if (!v) return;
+
+      const modal = document.getElementById('inspectModal');
+      const title = document.getElementById('modalTitleText');
+      if (title) title.textContent = `Вариант руды #${v.index} (${v.patternName})`;
+
+      // Рисуем тайлинг 3x3
+      drawTilingGrid();
+
+      // Отрисовываем грани 3D куба
+      updateModalCubeFaces();
+
+      if (modal) modal.classList.add('active');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('inspectModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target.id === 'inspectModal') {
+        closeModal();
+      }
+    }
+
+    function drawTilingGrid() {
+      const v = generatedVariants[activeModalVariantIndex];
+      if (!v) return;
+
+      const canvas = document.getElementById('tilingCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 48, 48);
+
+      // Временный холст 16x16
+      const tile = document.createElement('canvas');
+      tile.width = 16;
+      tile.height = 16;
+      drawPixelGridToCanvas(tile, v.pixels);
+
+      // Рисуем сетку 3x3 тайлов
+      for (let ty = 0; ty < 3; ty++) {
+        for (let tx = 0; tx < 3; tx++) {
+          ctx.drawImage(tile, tx * 16, ty * 16);
+        }
+      }
+
+      // Линии сетки блоков
+      const gridCheck = document.getElementById('tilingGridCheck');
+      if (gridCheck && gridCheck.checked) {
+        ctx.strokeStyle = 'rgba(14, 165, 233, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(16.5, 0.5, 16, 47);
+        ctx.strokeRect(0.5, 16.5, 47, 16);
+      }
+    }
+
+    function updateModalCubeFaces() {
+      const v = generatedVariants[activeModalVariantIndex];
+      if (!v) return;
+
+      const faces = ['Top', 'Front', 'Right', 'Bottom', 'Left', 'Back'];
+
+      faces.forEach(faceName => {
+        const c = document.getElementById(`cubeFace${faceName}`);
+        if (!c) return;
+
+        if (cubeTextureMode === 'stone_top_bottom' && (faceName === 'Top' || faceName === 'Bottom')) {
+          // Рисуем камень на верх и низ
+          drawPixelGridToCanvas(c, currentStonePixels);
+        } else {
+          // Рисуем руду
+          drawPixelGridToCanvas(c, v.pixels);
+        }
+      });
+    }
+
+    function toggleCubeTextureMode() {
+      cubeTextureMode = (cubeTextureMode === 'all_ore') ? 'stone_top_bottom' : 'all_ore';
+      const btn = document.getElementById('cubeModeToggleBtn');
+      if (btn) {
+        btn.textContent = (cubeTextureMode === 'all_ore') ? 'Все грани: Руда' : 'Верх/Низ: Камень';
+      }
+      updateModalCubeFaces();
+      showToast(cubeTextureMode === 'all_ore' ? 'Все грани куба: руда' : 'Верх и низ куба: камень');
+    }
+
+    function setModalCubeAngle(preset) {
+      if (preset === 'iso') {
+        modalCubeRotation = { x: -24, y: 45 };
+      } else if (preset === 'front') {
+        modalCubeRotation = { x: 0, y: 0 };
+      } else if (preset === 'top') {
+        modalCubeRotation = { x: -90, y: 0 };
+      }
+      applyCubeRotation();
+    }
+
+    function applyCubeRotation() {
+      const cube = document.getElementById('modalCube');
+      if (cube) {
+        cube.style.transform = `rotateX(${modalCubeRotation.x}deg) rotateY(${modalCubeRotation.y}deg)`;
+      }
+    }
+
+    // Интерактивное вращение 3D куба мышью
+    const cubeStage = document.getElementById('modalCubeStage');
+    let isDraggingCube = false;
+    let lastMousePos = { x: 0, y: 0 };
+
+    if (cubeStage) {
+      cubeStage.addEventListener('mousedown', (e) => {
+        isDraggingCube = true;
+        lastMousePos = { x: e.clientX, y: e.clientY };
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingCube) return;
+        const dx = e.clientX - lastMousePos.x;
+        const dy = e.clientY - lastMousePos.y;
+        modalCubeRotation.y += dx * 0.7;
+        modalCubeRotation.x -= dy * 0.7;
+        modalCubeRotation.x = Math.max(-90, Math.min(90, modalCubeRotation.x));
+        lastMousePos = { x: e.clientX, y: e.clientY };
+        applyCubeRotation();
+      });
+
+      window.addEventListener('mouseup', () => {
+        isDraggingCube = false;
+      });
+    }
+
+    function downloadCurrentModalVariant() {
+      const v = generatedVariants[activeModalVariantIndex];
+      if (v) downloadVariant(v.index);
+    }
+
+    async function copyCurrentModalImage() {
+      const v = generatedVariants[activeModalVariantIndex];
+      if (!v) return;
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = 16;
+      tempCanvas.height = 16;
+      drawPixelGridToCanvas(tempCanvas, v.pixels);
+
+      tempCanvas.toBlob(async (blob) => {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]);
+          showToast('📋 PNG скопирован в буфер обмена');
+        } catch (err) {
+          showToast('Не удалось скопировать (ограничение браузера)');
+        }
+      });
+    }
+
+    function openCurrentInPainter() {
+      const v = generatedVariants[activeModalVariantIndex];
+      if (!v) return;
+
+      try {
+        localStorage.setItem('voxel_painter_16x16', JSON.stringify(v.pixels));
+        window.location.href = 'painter.html';
+      } catch (e) {
+        window.location.href = 'painter.html';
+      }
+    }
+
+    // --- 13. Тост-уведомления ---
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2400);
+    }
+
+    // --- 14. Инициализация при загрузке страницы ---
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPaletteStrip();
+      regenerateAll();
+    });
+  </script>
+</body>
+</html>
